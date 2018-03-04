@@ -1,0 +1,59 @@
+/* DEPRECATED */
+
+
+console.log("test")
+
+const Eth = require('ethjs');
+
+require(['ethjs'], function (ethjs) {
+    //foo is now loaded.
+
+    console.log(ethjs)
+  const eth = new ethjs.Eth(new Eth.HttpProvider('https://ropsten.infura.io'));
+
+  eth.getBlockByNumber(45300, true, (err, block) => {
+    // result null { ...block data... }
+    console.log("err")
+    console.log(err)
+    console.log("err")
+    console.log(block)
+  });
+
+  const etherValue = Eth.toWei(72, 'ether');
+
+  // result <BN: 3e733628714200000>
+
+  // const tokenABI = [{
+  //   "constant": true,
+  //   "inputs": [],
+  //   "name": "totalSupply",
+  //   "outputs":[{"name": "","type": "uint256"}],
+  //   "payable": false,
+  //   "type": "function",
+  // }];
+
+  const token = eth.contract(tokenABI).at('0xB6eD7644C69416d67B522e20bC294A9a9B405B31');
+
+  token.totalSupply().then((totalSupply) => {
+    // result <BN ...>  4500000
+    console.log("total supply")
+    console.log(totalSupply)
+  });
+
+
+
+});
+
+
+
+async function waitForTxToBeMined (txHash) {
+  let txReceipt
+  while (!txReceipt) {
+    try {
+      txReceipt = await eth.getTransactionReceipt(txHash)
+    } catch (err) {
+      return indicateFailure(err)
+    }
+  }
+  indicateSuccess()
+}

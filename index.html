@@ -1,0 +1,199 @@
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.2.3/milligram.min.css">
+  </head>
+  <body class="container" style="padding-top: 3%;">
+    
+    <div class="row">
+      <div class="column"><h2>0xBTC</h2></div>
+      <div class="column"><h3>Blockchain Statistics</h3></div>
+    </div>
+    <div class="row">
+      <div class="column">
+        <table>
+          <thead> <tr> <th> </th> <th>Current Value</th> </tr> </thead>
+          <tbody id="accounts"> 
+            <tr><td colspan="2">Loading info from the blockchain...</td></tr> 
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="row">
+      <div class="column">Data fetched at: <span id="LastUpdatedTime">00:00:00</span></div>
+    </div>
+
+
+    <script type="text/javascript" src="js/ethereumjs-testrpc.js"></script>
+    <script type="text/javascript" src="js/ethjs.js"></script>
+    <script type="text/javascript" src="js/abi.js"></script>
+    
+    <script type="text/javascript">
+      var eth = new Eth(window.web3.currentProvider);
+      var el = function(id){ return document.querySelector(id); };
+      
+      if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !== 'undefined') {
+        eth.setProvider(window.web3.currentProvider);
+      } else {
+        /* throw some errors here / show link to install metamask */
+      }
+
+      const token = eth.contract(tokenABI).at('0xB6eD7644C69416d67B522e20bC294A9a9B405B31');
+
+      el('#accounts').innerHTML = '';
+
+      stats = [
+        ['Mining Difficulty',   token.getMiningDifficulty,      "",       1         ],
+        ['Estimated Hashrate',  null,                           "",       1         ],
+        ['Tokens Minted',       token.tokensMinted,             "0xBTC",  0.00000001],
+        ['Last Reward Block',   token.lastRewardEthBlockNumber, "",       1],
+        ['Last Block',          eth.blockNumber,                "",       1],
+        //['Last Reward',       token.tokensMinted,             "0xBTC",  0.00000001],
+        ['Mining Reward',       token.getMiningReward,          "0xBTC",  0.00000001],
+        ['Total Supply',        token.totalSupply,              "0xBTC",  0.00000001],
+      ];
+
+      function updateEstimatedHashrate(difficulty) {
+        console.log("difficulty:" + difficulty)
+        hashrate = difficulty * 2**22 / 600
+        hashrate /= 1000000
+        el('#EstimatedHashrate').innerHTML = "<b>" + hashrate.toFixed(2) + "</b> Mh/s";
+      }
+
+      function updateLastUpdatedTime() {
+        var time = new Date();
+        current_time = time.toLocaleTimeString();
+        el('#LastUpdatedTime').innerHTML = current_time;
+      }
+
+      function createStatsTable(){
+        stats.forEach(function(stat){
+          stat_name = stat[0]
+          stat_function = stat[1]
+          stat_unit = stat[2]
+          stat_multiplier = stat[3]
+
+          el('#accounts').innerHTML += '<tr><td>'
+            + stat_name + '</td><td id="'
+            + stat_name.replace(/ /g,"") + '"></td></tr>';
+        });
+      }
+
+      function updateStatsTable(){
+        stats.forEach(function(stat){
+          stat_name = stat[0]
+          stat_function = stat[1]
+          stat_unit = stat[2]
+          stat_multiplier = stat[3]
+
+          set_value = function(stat_name, stat_unit, stat_multiplier) {
+            return function(result) {
+              //console.log("setting " + stat_name + " with " + result + " type " + typeof result)
+
+              try {
+                result = result[0].toString(10)
+              } catch (err) {
+                result = result.toString(10)
+              }
+
+              /* once we get diffuculty we can calculate est hashrate */
+              if (stat_name === "Mining Difficulty") {
+                updateEstimatedHashrate(result)
+              }
+
+              //console.log("typeof result is " + typeof result)
+
+              //console.log("set " + stat_name + " with " + result.toString(10))
+              el('#' + stat_name.replace(/ /g,"")).innerHTML = "<b>" + result.toString(10)*stat_multiplier + "</b> " + stat_unit;
+            }
+          }
+          if(stat_function !== null) {
+            stat_function().then(set_value(stat_name, stat_unit, stat_multiplier));
+          }
+        });
+
+        updateLastUpdatedTime();
+      }
+
+
+//       const filter = new eth.filter.Filter({ delay: 300 })
+//       .new({ fromBlock: "latest" })
+//       .then((result) => {
+//         // result <BigNumber ...> filterId
+//       })
+//       .catch((error) => {
+//         // result null
+//       });
+//       filter.watch((result) => {
+//           console.log("got a block update")
+//           console.log(result);
+//         // result [{...}, ...] (fires multiple times)
+//       });
+// //filter.uninstall(cb);
+
+
+      const filter = new eth.filter.BlockFilter()
+      filter.watch((result) => {
+        // result [{...}, ...] (fires multiple times)
+          console.log("got block update")
+      });
+      //filter.uninstall(cb);
+
+
+      // function pollForChanges(filter_id) {
+      //   eth.getFilterChanges(filter_id)
+      //   .then((result) => {
+      //     console.log("got block update")
+      //     pollForChanges()
+      //   })
+      // }
+
+      createStatsTable();
+      updateStatsTable();
+      //setupNewBlockFilter();
+
+      // eth.newBlockFilter()
+      // .then((result) => {
+      //   console.log("got filter")
+      //   console.log(result);
+      //   filter_id = result[0]
+      //   //updateStatsTable();
+      //   console.log("res")
+      //   console.log(filter_id)
+      //   pollForChanges(filter_id);
+      // })
+      // .catch((error) => {
+      //   console.log("got a block update error")
+      //   // null
+      // });
+
+
+      // eth.newBlockFilter()
+      // .then((result) => {
+      //   console.log("got a block update")
+      //   updateStatsTable();
+      // })
+      // .catch((error) => {
+      //   // null
+      // });
+
+      // eth.accounts(function(accountsError, accounts) {
+      //   if (accountsError) {
+      //     el('#accounts').innerHTML = 'Hmm.. looks like there was an error: '
+      //       + String(accountsError);
+      //   }
+
+
+      //   accounts.forEach(function(account){
+      //     el('#accounts').innerHTML += '<tr><td>'
+      //       + account + '</td><td id="accountBalance_'
+      //       + account + '"></td></tr>';
+
+      //     eth.getBalance(account, function(balanceError, balance){
+      //       el('#accountBalance_' + account).innerHTML += Eth.fromWei(balance, 'ether')
+      //         + ' ether';
+      //     });
+      //   });
+      // });
+    </script>
+  </body>
+</html>
