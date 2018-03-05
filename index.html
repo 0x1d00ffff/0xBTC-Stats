@@ -12,7 +12,7 @@
       <div class="column">
         <table>
           <thead> <tr> <th> </th> <th> </th> </tr> </thead>
-          <tbody id="accounts"> 
+          <tbody id="statistics"> 
             <tr><td colspan="2">Loading info from the blockchain...</td></tr> 
           </tbody>
         </table>
@@ -28,27 +28,30 @@
     <script type="text/javascript" src="js/abi.js"></script>
     
     <script type="text/javascript">
-      var eth = new Eth(window.web3.currentProvider);
       var el = function(id){ return document.querySelector(id); };
       var stats_updated_count = 0;
       const _BLOCKS_PER_READJUSTMENT = 1024;
       
       if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !== 'undefined') {
-        eth.setProvider(window.web3.currentProvider);
+        /* do nothing */
       } else {
-        /* throw some errors here / show link to install metamask */
+          el('#statistics').innerHTML = 
+            '<tr><td colspan="2">This site requires the <a href="https://metamask.io/">metamask</a> extension or <a href="https://brave.com/">brave</a> browser.</td></tr>';
+          fail;
       }
 
+      var eth = new Eth(window.web3.currentProvider);
       const token = eth.contract(tokenABI).at('0xB6eD7644C69416d67B522e20bC294A9a9B405B31');
 
-      el('#accounts').innerHTML = '';
+      el('#statistics').innerHTML = '';
 
       stats = [
-        /*Description                     promise which retuns, or null         units         multiplier  values go here*/
-        ['Mining',                        null,                                 "",           1,          null     ], /* mining difficulty */
+        /*Description                     promise which retuns, or null         units         multiplier  null: filled in later*/
+        ['',                              null,                                 "",           1,          null     ], /* mining difficulty */
         ['Mining Difficulty',             token.getMiningDifficulty,            "",           1,          null     ], /* mining difficulty */
         ['Estimated Hashrate',            null,                                 "Mh/s",       1,          null     ], /* mining difficulty */
         ['Rewards Until Readjustment',    null,                                 "",           1,          null     ], /* mining difficulty */
+        ['Current Average Reward Time',   null,                                 "minutes",    1,          null     ], /* mining difficulty */
         ['Last Difficulty Start Block',   token.latestDifficultyPeriodStarted,  "",           1,          null     ], /* mining difficulty */
         ['Tokens Minted',                 token.tokensMinted,                   "0xBTC",      0.00000001, null     ], /* supply */
         ['Max Supply for Current Era',    token.maxSupplyForEra,                "0xBTC",      0.00000001, null     ], /* mining */
@@ -56,8 +59,6 @@
         ['Last Eth Reward Block',         token.lastRewardEthBlockNumber,       "",           1,          null     ], /* mining */
         ['Last Eth Block',                eth.blockNumber,                      "",           1,          null     ], /* mining */
         ['Current Reward Era',            token.rewardEra,                      "/ 39",       1,          null     ], /* mining */
-        //['Blocks Until Next Epoch',     null,                                 "",         1,          null     ],
-        //['Last Reward',                 token.tokensMinted,                   "0xBTC",    0.00000001, null     ],
         ['Current Mining Reward',         token.getMiningReward,                "0xBTC",      0.00000001, null     ], /* mining */
         ['Epoch Count',                   token.epochCount,                     "",           1,          null     ], /* mining */
         ['Total Supply',                  token.totalSupply,                    "0xBTC",      0.00000001, null     ], /* supply */
@@ -102,18 +103,21 @@
 
         /* rewards until next readjustment */
         epoch_count = getValueFromStats('Epoch Count', stats)
-        rewards_left = _BLOCKS_PER_READJUSTMENT - (epoch_count % _BLOCKS_PER_READJUSTMENT)
+        rewards_since_readjustment = epoch_count % _BLOCKS_PER_READJUSTMENT
+        rewards_left = _BLOCKS_PER_READJUSTMENT - rewards_since_readjustment
         el('#RewardsUntilReadjustment').innerHTML = "<b>" + rewards_left.toString(10) + "</b>";
 
+        /* time per reward block */
+        current_eth_block = getValueFromStats('Last Eth Block', stats)
+        difficulty_start_eth_block = getValueFromStats('Last Difficulty Start Block', stats)
+
+        /* time calculated using 15-second eth blocks */
+        seconds_since_readjustment = (current_eth_block - difficulty_start_eth_block) * 15
+
+        seconds_per_reward = seconds_since_readjustment / rewards_since_readjustment;
+        minutes_per_reward = (seconds_per_reward / 60).toFixed(2)
+        el('#CurrentAverageRewardTime').innerHTML = "<b>" + minutes_per_reward + "</b> minutes";
       }
-
-      // function updateEstimatedHashrate(difficulty) {
-      // }
-
-      // function updateSupplyRemainingInEra(latestDifficultyPeriodStarted) {
-      //   console.log("blocks:" + latestDifficultyPeriodStarted)
-      //   el('#BlocksUntilNextEpoch').innerHTML = "<b>" + latestDifficultyPeriodStarted.toFixed(2) + "</b> Mh/s";
-      // }
 
       function updateLastUpdatedTime() {
         var time = new Date();
@@ -142,7 +146,7 @@
           stat_unit = stat[2]
           stat_multiplier = stat[3]
 
-          el('#accounts').innerHTML += '<tr><td>'
+          el('#statistics').innerHTML += '<tr><td>'
             + stat_name + '</td><td id="'
             + stat_name.replace(/ /g,"") + '"></td></tr>';
         });
@@ -159,15 +163,11 @@
           stat_value = stat[4]
           /* if there is a function without an associated value, we are still waiting */
           if(stat_function !== null && stat_value === null) {
-            console.log('false! value:' + stat_value)
-            //console.log('false')
             all_loaded = false;
           }
-          //console.log('stat check fn: ' + stat_function.toString() + " value: " + stat_value)
         })
 
         if(all_loaded) {
-          //console.log('truetruetruetruetruetruetruetruetruetruetrue')
           return true;
         } else {
           return false;
@@ -190,23 +190,10 @@
                 result = result.toString(10)
               }
 
-              // /* once we get diffuculty we can calculate est hashrate */
-              // if (stat_name === "Mining Difficulty") {
-              //   updateEstimatedHashrate(result)
-              // }
-
-              // /* once we get diffuculty we can calculate est hashrate 
-              // if (stat_name === "Last Difficulty Start Block") {
-              //   updateBlocksUntilNextEpoch(result)
-              // }
-
               result = result.toString(10)*stat_multiplier
-
               save_fn(result)
 
-              //console.log("typeof result is " + typeof result)
-
-              console.log("set " + stat_name + " with " + result.toString(10))
+              //console.log("set " + stat_name + " with " + result.toString(10))
               el('#' + stat_name.replace(/ /g,"")).innerHTML = "<b>" + result + "</b> " + stat_unit;
 
               /* once we have grabbed all stats, update the calculated ones */
@@ -287,15 +274,15 @@
       //   // null
       // });
 
-      // eth.accounts(function(accountsError, accounts) {
+      // eth.statistics(function(accountsError, statistics) {
       //   if (accountsError) {
-      //     el('#accounts').innerHTML = 'Hmm.. looks like there was an error: '
+      //     el('#statistics').innerHTML = 'Hmm.. looks like there was an error: '
       //       + String(accountsError);
       //   }
 
 
-      //   accounts.forEach(function(account){
-      //     el('#accounts').innerHTML += '<tr><td>'
+      //   statistics.forEach(function(account){
+      //     el('#statistics').innerHTML += '<tr><td>'
       //       + account + '</td><td id="accountBalance_'
       //       + account + '"></td></tr>';
 
