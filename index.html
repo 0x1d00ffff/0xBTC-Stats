@@ -11,7 +11,7 @@
     <div class="row">
       <div class="column">
         <table>
-          <thead> <tr> <th> </th> <th>Current Value</th> </tr> </thead>
+          <thead> <tr> <th> </th> <th> </th> </tr> </thead>
           <tbody id="accounts"> 
             <tr><td colspan="2">Loading info from the blockchain...</td></tr> 
           </tbody>
@@ -22,7 +22,7 @@
       <div class="column">Data fetched at: <span id="LastUpdatedTime">00:00:00</span></div>
     </div>
 
-
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script type="text/javascript" src="js/ethereumjs-testrpc.js"></script>
     <script type="text/javascript" src="js/ethjs.js"></script>
     <script type="text/javascript" src="js/abi.js"></script>
@@ -44,22 +44,33 @@
       el('#accounts').innerHTML = '';
 
       stats = [
-        /*Description                   promise which retuns, or null         units     multiplier  values go here*/
-        ['Mining Difficulty',           token.getMiningDifficulty,            "",       1,          null     ], /* mining difficulty */
-        ['Estimated Hashrate',          null,                                 "",       1,          null     ], /* mining difficulty */
-        ['Rewards Until Readjustment',  null,                                 "",       1,          null     ], /* mining difficulty */
-        ['Last Difficulty Start Block', token.latestDifficultyPeriodStarted,  "",       1,          null     ], /* mining difficulty */
-        ['Tokens Minted',               token.tokensMinted,                   "0xBTC",  0.00000001, null     ], /* supply */
-        ['Max Supply for Current Era',  token.maxSupplyForEra,                "0xBTC",  0.00000001, null     ], /* mining */
-        ['Supply Remaining in Era',     null,                                 "0xBTC",  0.00000001, null     ], /* mining */
-        ['Last Eth Reward Block',       token.lastRewardEthBlockNumber,       "",       1,          null     ], /* mining */
-        ['Last Eth Block',              eth.blockNumber,                      "",       1,          null     ], /* mining */
-        ['Current Reward Era',          token.rewardEra,                      "",       1,          null     ], /* mining */
-        //['Blocks Until Next Epoch',     null,                                 "",       1,          null     ],
-        //['Last Reward',                 token.tokensMinted,                   "0xBTC",  0.00000001, null     ],
-        ['Mining Reward',               token.getMiningReward,                "0xBTC",  0.00000001, null     ], /* mining */
-        ['Epoch Count',                 token.epochCount,                     "",       1,          null     ], /* mining */
-        ['Total Supply',                token.totalSupply,                    "0xBTC",  0.00000001, null     ], /* supply */
+        /*Description                     promise which retuns, or null         units         multiplier  values go here*/
+        ['Mining',                        null,                                 "",           1,          null     ], /* mining difficulty */
+        ['Mining Difficulty',             token.getMiningDifficulty,            "",           1,          null     ], /* mining difficulty */
+        ['Estimated Hashrate',            null,                                 "Mh/s",       1,          null     ], /* mining difficulty */
+        ['Rewards Until Readjustment',    null,                                 "",           1,          null     ], /* mining difficulty */
+        ['Last Difficulty Start Block',   token.latestDifficultyPeriodStarted,  "",           1,          null     ], /* mining difficulty */
+        ['Tokens Minted',                 token.tokensMinted,                   "0xBTC",      0.00000001, null     ], /* supply */
+        ['Max Supply for Current Era',    token.maxSupplyForEra,                "0xBTC",      0.00000001, null     ], /* mining */
+        ['Supply Remaining in Era',       null,                                 "0xBTC",      0.00000001, null     ], /* mining */
+        ['Last Eth Reward Block',         token.lastRewardEthBlockNumber,       "",           1,          null     ], /* mining */
+        ['Last Eth Block',                eth.blockNumber,                      "",           1,          null     ], /* mining */
+        ['Current Reward Era',            token.rewardEra,                      "/ 39",       1,          null     ], /* mining */
+        //['Blocks Until Next Epoch',     null,                                 "",         1,          null     ],
+        //['Last Reward',                 token.tokensMinted,                   "0xBTC",    0.00000001, null     ],
+        ['Current Mining Reward',         token.getMiningReward,                "0xBTC",      0.00000001, null     ], /* mining */
+        ['Epoch Count',                   token.epochCount,                     "",           1,          null     ], /* mining */
+        ['Total Supply',                  token.totalSupply,                    "0xBTC",      0.00000001, null     ], /* supply */
+        ['',                              null,                                 "",           1,          null     ], /* */
+        ['Token Holders',                 null,                                 "holders",    1,          null     ], /* usage */
+        ['Token Transfers',               null,                                 "transfers",  1,          null     ], /* usage */
+        ['Total Contract Operations',     null,                                 "txs",        1,          null     ], /* usage */
+        //['',                              null,                                 "0xBTC",      0.00000001, null     ], /* */
+        //['TokenMiningPool.com Hashrate',  null,                                 "Mh/s",       1,          null     ], /* pool */
+        //['0xBrute.com Hashrate',          null,                                 "Mh/s",       1,          null     ], /* pool */
+        //['0xPool.io Hashrate',            null,                                 "Mh/s",       1,          null     ], /* pool */
+        //['gpu.PiZzA Hashrate',            null,                                 "Mh/s",       1,          null     ], /* pool */
+        //['0xBTCpool.com Hashrate',        null,                                 "Mh/s",       1,          null     ], /* pool */
       ];
 
       function getValueFromStats(name, stats) {
@@ -67,8 +78,7 @@
         stats.forEach(function(stat){
           if (stat[0] === name) {
             value = stat[4];
-          }
-        })
+          }})
         return value
       }
 
@@ -83,12 +93,12 @@
         /* supply remaining in era */
         max_supply_for_era = getValueFromStats('Max Supply for Current Era', stats)
         current_supply = getValueFromStats('Tokens Minted', stats)
-        current_reward = getValueFromStats('Mining Reward', stats)
+        current_reward = getValueFromStats('Current Mining Reward', stats)
         // console.log("max_supply_for_era:" + max_supply_for_era)
         // console.log("current_supply:" + current_supply)
         supply_remaining_in_era = max_supply_for_era - current_supply; /* TODO: probably need to round to current mining reward */
         rewards_blocks_remaining_in_era = supply_remaining_in_era / current_reward;
-        el('#SupplyRemaininginEra').innerHTML = "<b>" + supply_remaining_in_era.toString(10) + "</b> 0xBTC (" + rewards_blocks_remaining_in_era + " blocks)";
+        el('#SupplyRemaininginEra').innerHTML = "<b>" + supply_remaining_in_era.toString(10) + "</b> 0xBTC <span>(" + rewards_blocks_remaining_in_era + " blocks)</span>";
 
         /* rewards until next readjustment */
         epoch_count = getValueFromStats('Epoch Count', stats)
@@ -111,6 +121,20 @@
         el('#LastUpdatedTime').innerHTML = current_time;
       }
 
+      function updateThirdPartyAPIs() {
+        /* ethplorer token info */
+        $.getJSON('https://api.ethplorer.io/getTokenInfo/0xb6ed7644c69416d67b522e20bc294a9a9b405b31?apiKey=freekey', 
+          function(data) {
+            el('#TokenHolders').innerHTML = "<b>" + data["holdersCount"] + "</b> holders";
+            el('#TokenTransfers').innerHTML = "<b>" + data["transfersCount"] + "</b> transfers";
+        });
+        /* ethplorer contract address info */
+        $.getJSON('https://api.ethplorer.io/getAddressInfo/0xb6ed7644c69416d67b522e20bc294a9a9b405b31?apiKey=freekey', 
+          function(data) {
+            el('#TotalContractOperations').innerHTML = "<b>" + data["countTxs"] + "</b> txs";
+        });
+      }
+
       function createStatsTable(){
         stats.forEach(function(stat){
           stat_name = stat[0]
@@ -120,7 +144,7 @@
 
           el('#accounts').innerHTML += '<tr><td>'
             + stat_name + '</td><td id="'
-            + stat_name.replace(/ /g,"") + '">loading...</td></tr>';
+            + stat_name.replace(/ /g,"") + '"></td></tr>';
         });
       }
 
@@ -197,6 +221,7 @@
           }
         });
 
+        updateThirdPartyAPIs();
         updateLastUpdatedTime();
       }
 
