@@ -30,6 +30,8 @@
     <script type="text/javascript">
       var eth = new Eth(window.web3.currentProvider);
       var el = function(id){ return document.querySelector(id); };
+      var stats_updated_count = 0;
+      const _BLOCKS_PER_READJUSTMENT = 1024;
       
       if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !== 'undefined') {
         eth.setProvider(window.web3.currentProvider);
@@ -42,22 +44,66 @@
       el('#accounts').innerHTML = '';
 
       stats = [
-        ['Mining Difficulty',   token.getMiningDifficulty,      "",       1         ],
-        ['Estimated Hashrate',  null,                           "",       1         ],
-        ['Tokens Minted',       token.tokensMinted,             "0xBTC",  0.00000001],
-        ['Last Reward Block',   token.lastRewardEthBlockNumber, "",       1],
-        ['Last Block',          eth.blockNumber,                "",       1],
-        //['Last Reward',       token.tokensMinted,             "0xBTC",  0.00000001],
-        ['Mining Reward',       token.getMiningReward,          "0xBTC",  0.00000001],
-        ['Total Supply',        token.totalSupply,              "0xBTC",  0.00000001],
+        /*Description                   promise which retuns, or null         units     multiplier  values go here*/
+        ['Mining Difficulty',           token.getMiningDifficulty,            "",       1,          null     ], /* mining difficulty */
+        ['Estimated Hashrate',          null,                                 "",       1,          null     ], /* mining difficulty */
+        ['Rewards Until Readjustment',  null,                                 "",       1,          null     ], /* mining difficulty */
+        ['Last Difficulty Start Block', token.latestDifficultyPeriodStarted,  "",       1,          null     ], /* mining difficulty */
+        ['Tokens Minted',               token.tokensMinted,                   "0xBTC",  0.00000001, null     ], /* supply */
+        ['Max Supply for Current Era',  token.maxSupplyForEra,                "0xBTC",  0.00000001, null     ], /* mining */
+        ['Supply Remaining in Era',     null,                                 "0xBTC",  0.00000001, null     ], /* mining */
+        ['Last Eth Reward Block',       token.lastRewardEthBlockNumber,       "",       1,          null     ], /* mining */
+        ['Last Eth Block',              eth.blockNumber,                      "",       1,          null     ], /* mining */
+        ['Current Reward Era',          token.rewardEra,                      "",       1,          null     ], /* mining */
+        //['Blocks Until Next Epoch',     null,                                 "",       1,          null     ],
+        //['Last Reward',                 token.tokensMinted,                   "0xBTC",  0.00000001, null     ],
+        ['Mining Reward',               token.getMiningReward,                "0xBTC",  0.00000001, null     ], /* mining */
+        ['Epoch Count',                 token.epochCount,                     "",       1,          null     ], /* mining */
+        ['Total Supply',                token.totalSupply,                    "0xBTC",  0.00000001, null     ], /* supply */
       ];
 
-      function updateEstimatedHashrate(difficulty) {
-        console.log("difficulty:" + difficulty)
+      function getValueFromStats(name, stats) {
+        value = null
+        stats.forEach(function(stat){
+          if (stat[0] === name) {
+            value = stat[4];
+          }
+        })
+        return value
+      }
+
+      function updateStatsThatHaveDependencies(stats) {
+        /* estimated hashrate */
+        difficulty = getValueFromStats('Mining Difficulty', stats)
+        // console.log("difficulty:" + difficulty)
         hashrate = difficulty * 2**22 / 600
         hashrate /= 1000000
         el('#EstimatedHashrate').innerHTML = "<b>" + hashrate.toFixed(2) + "</b> Mh/s";
+
+        /* supply remaining in era */
+        max_supply_for_era = getValueFromStats('Max Supply for Current Era', stats)
+        current_supply = getValueFromStats('Tokens Minted', stats)
+        current_reward = getValueFromStats('Mining Reward', stats)
+        // console.log("max_supply_for_era:" + max_supply_for_era)
+        // console.log("current_supply:" + current_supply)
+        supply_remaining_in_era = max_supply_for_era - current_supply; /* TODO: probably need to round to current mining reward */
+        rewards_blocks_remaining_in_era = supply_remaining_in_era / current_reward;
+        el('#SupplyRemaininginEra').innerHTML = "<b>" + supply_remaining_in_era.toString(10) + "</b> 0xBTC (" + rewards_blocks_remaining_in_era + " blocks)";
+
+        /* rewards until next readjustment */
+        epoch_count = getValueFromStats('Epoch Count', stats)
+        rewards_left = _BLOCKS_PER_READJUSTMENT - (epoch_count % _BLOCKS_PER_READJUSTMENT)
+        el('#RewardsUntilReadjustment').innerHTML = "<b>" + rewards_left.toString(10) + "</b>";
+
       }
+
+      // function updateEstimatedHashrate(difficulty) {
+      // }
+
+      // function updateSupplyRemainingInEra(latestDifficultyPeriodStarted) {
+      //   console.log("blocks:" + latestDifficultyPeriodStarted)
+      //   el('#BlocksUntilNextEpoch').innerHTML = "<b>" + latestDifficultyPeriodStarted.toFixed(2) + "</b> Mh/s";
+      // }
 
       function updateLastUpdatedTime() {
         var time = new Date();
@@ -74,40 +120,80 @@
 
           el('#accounts').innerHTML += '<tr><td>'
             + stat_name + '</td><td id="'
-            + stat_name.replace(/ /g,"") + '"></td></tr>';
+            + stat_name.replace(/ /g,"") + '">loading...</td></tr>';
         });
       }
 
-      function updateStatsTable(){
+      function areAllBlockchainStatsLoaded(stats) {
+        all_loaded = true;
+
+        stats.forEach(function(stat){
+          stat_name = stat[0]
+          stat_function = stat[1]
+          stat_unit = stat[2]
+          stat_multiplier = stat[3]
+          stat_value = stat[4]
+          /* if there is a function without an associated value, we are still waiting */
+          if(stat_function !== null && stat_value === null) {
+            console.log('false! value:' + stat_value)
+            //console.log('false')
+            all_loaded = false;
+          }
+          //console.log('stat check fn: ' + stat_function.toString() + " value: " + stat_value)
+        })
+
+        if(all_loaded) {
+          //console.log('truetruetruetruetruetruetruetruetruetruetrue')
+          return true;
+        } else {
+          return false;
+        }
+      }
+
+      function updateStatsTable(stats){
         stats.forEach(function(stat){
           stat_name = stat[0]
           stat_function = stat[1]
           stat_unit = stat[2]
           stat_multiplier = stat[3]
 
-          set_value = function(stat_name, stat_unit, stat_multiplier) {
+          set_value = function(stats, stat_name, stat_unit, stat_multiplier, save_fn) {
             return function(result) {
               //console.log("setting " + stat_name + " with " + result + " type " + typeof result)
-
               try {
                 result = result[0].toString(10)
               } catch (err) {
                 result = result.toString(10)
               }
 
-              /* once we get diffuculty we can calculate est hashrate */
-              if (stat_name === "Mining Difficulty") {
-                updateEstimatedHashrate(result)
-              }
+              // /* once we get diffuculty we can calculate est hashrate */
+              // if (stat_name === "Mining Difficulty") {
+              //   updateEstimatedHashrate(result)
+              // }
+
+              // /* once we get diffuculty we can calculate est hashrate 
+              // if (stat_name === "Last Difficulty Start Block") {
+              //   updateBlocksUntilNextEpoch(result)
+              // }
+
+              result = result.toString(10)*stat_multiplier
+
+              save_fn(result)
 
               //console.log("typeof result is " + typeof result)
 
-              //console.log("set " + stat_name + " with " + result.toString(10))
-              el('#' + stat_name.replace(/ /g,"")).innerHTML = "<b>" + result.toString(10)*stat_multiplier + "</b> " + stat_unit;
+              console.log("set " + stat_name + " with " + result.toString(10))
+              el('#' + stat_name.replace(/ /g,"")).innerHTML = "<b>" + result + "</b> " + stat_unit;
+
+              /* once we have grabbed all stats, update the calculated ones */
+              if(areAllBlockchainStatsLoaded(stats)) {
+                updateStatsThatHaveDependencies(stats);
+              }
             }
           }
+          /* run promises that store stat values */
           if(stat_function !== null) {
-            stat_function().then(set_value(stat_name, stat_unit, stat_multiplier));
+            stat_function().then(set_value(stats, stat_name, stat_unit, stat_multiplier, (value) => {stat[4]=value}));
           }
         });
 
@@ -148,7 +234,7 @@
       // }
 
       createStatsTable();
-      updateStatsTable();
+      updateStatsTable(stats);
       //setupNewBlockFilter();
 
       // eth.newBlockFilter()
