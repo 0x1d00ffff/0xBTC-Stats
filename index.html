@@ -117,6 +117,16 @@
         seconds_per_reward = seconds_since_readjustment / rewards_since_readjustment;
         minutes_per_reward = (seconds_per_reward / 60).toFixed(2)
         el('#CurrentAverageRewardTime').innerHTML = "<b>" + minutes_per_reward + "</b> minutes";
+
+
+
+        /* estimated hashrate */
+        difficulty = getValueFromStats('Mining Difficulty', stats)
+        // console.log("difficulty:" + difficulty)
+        hashrate = difficulty * 2**22 / 600
+        /* use current reward rate in hashrate calculation */
+        hashrate *= (10 / minutes_per_reward)
+        el('#EstimatedHashrate').innerHTML = "<b>" + (hashrate / 1000000).toFixed(2) + "</b> Mh/s";
       }
 
       function updateLastUpdatedTime() {
