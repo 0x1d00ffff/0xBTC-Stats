@@ -48,7 +48,7 @@
       </div>
       <div class="row">
         <div class="column">
-          <h5>Block distribution over the past 24 hours</h5>
+          <h5>Block distribution since last retarget</h5>
           <table>
             <!--<thead id="minerstats"> <tr> <th> </th> <th> </th> </tr> </thead>-->
             <tbody id="minerstats"> 
@@ -59,7 +59,7 @@
       </div>
       <div class="row">
         <div class="column">
-          <h5>Blocks solved in the last 24 hours</h5>
+          <h5>Blocks solved since last retarget</h5>
           <table>
             <!--<thead id="minerstats"> <tr> <th> </th> <th> </th> </tr> </thead>-->
             <tbody id="blockstats"> 
@@ -79,6 +79,8 @@
     <script type="text/javascript" src="js/abi.js"></script>
     
     <script type="text/javascript">
+
+      log('0xBitcoin Stats v0.0.2');
 
       var el = function(id){ return document.querySelector(id); };
       var stats_updated_count = 0;
@@ -224,6 +226,7 @@
         });
       }
 
+      /* TODO use hours_into_past */
       function updateAllMinerInfo(eth, stats, hours_into_past){
 
         var known_miners = {
@@ -241,8 +244,10 @@
         var last_reward_eth_block = getValueFromStats('Last Eth Reward Block', stats)
         var current_eth_block = getValueFromStats('Last Eth Block', stats)
         var estimated_network_hashrate = getValueFromStats('Estimated Hashrate', stats)
+        var last_difficulty_start_block = getValueFromStats('Last Difficulty Start Block', stats)
 
-        var num_eth_blocks_to_search = hours_into_past * 60 * 60 / 15;
+        //var num_eth_blocks_to_search = hours_into_past * 60 * 60 / 15;
+        var num_eth_blocks_to_search = last_reward_eth_block - last_difficulty_start_block;
         log("searching last", num_eth_blocks_to_search, "blocks");
 
         /* get all mint() transactions in the last N blocks */
