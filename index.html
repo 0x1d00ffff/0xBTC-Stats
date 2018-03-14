@@ -1,25 +1,76 @@
 <html>
   <head>
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.2.3/milligram.min.css">
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+    <link rel="stylesheet" href="//cdn.rawgit.com/necolas/normalize.css/master/normalize.css">
+    <title>0xBitcoin Statistics</title>
+    <script type="text/javascript">
+      var log = function(){
+        // 1. Convert args to a normal array
+        var args = Array.prototype.slice.call(arguments);
+        // 2. Prepend log prefix log string
+        args.unshift(((Date.now()-globalTimerStart)/1000).toFixed(2) + 's ');
+        // 3. Pass along arguments to console.log
+        console.log.apply(console, args);
+      }
+      var globalTimerStart = Date.now();
+    </script>
+    <!--<style>
+    td {
+      border: 1px solid black;
+    }
+    td > div {
+      width: 30px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    </style>-->
   </head>
-  <body class="container" style="padding-top: 3%;">
-    
-    <div class="row">
-      <div class="column"><h2>0xBTC</h2></div>
-      <div class="column"><h3>Blockchain Statistics</h3></div>
-    </div>
-    <div class="row">
-      <div class="column">
-        <table>
-          <thead> <tr> <th> </th> <th> </th> </tr> </thead>
-          <tbody id="statistics"> 
-            <tr><td colspan="2">Loading info from the blockchain...</td></tr> 
-          </tbody>
-        </table>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="column"><h1>0xBTC</h1></div>
+        <div class="column"><h1>Blockchain Statistics</h1></div>
       </div>
     </div>
-    <div class="row">
-      <div class="column">Data fetched at: <span id="LastUpdatedTime">00:00:00</span></div>
+    <div class="container">
+      <div class="row">
+        <div class="column">
+          <h5>Current Contract Status</h5>
+          <table>
+            <!--<thead> <tr> <th> </th> <th> </th> </tr> </thead>-->
+            <tbody id="statistics"> 
+              <tr><td colspan="2">Loading info from the blockchain...</td></tr> 
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="row">
+        <div class="column">
+          <h5>Block distribution over the past 24 hours</h5>
+          <table>
+            <!--<thead id="minerstats"> <tr> <th> </th> <th> </th> </tr> </thead>-->
+            <tbody id="minerstats"> 
+              <tr><td colspan="3">Loading info from the blockchain...</td></tr> 
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="row">
+        <div class="column">
+          <h5>Blocks solved in the last 24 hours</h5>
+          <table>
+            <!--<thead id="minerstats"> <tr> <th> </th> <th> </th> </tr> </thead>-->
+            <tbody id="blockstats"> 
+              <tr><td colspan="3">Loading info from the blockchain...</td></tr> 
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="row">
+        <div class="column">Data fetched at: <span id="LastUpdatedTime">00:00:00</span></div>
+      </div>
     </div>
 
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
@@ -28,9 +79,11 @@
     <script type="text/javascript" src="js/abi.js"></script>
     
     <script type="text/javascript">
+
       var el = function(id){ return document.querySelector(id); };
       var stats_updated_count = 0;
       const _BLOCKS_PER_READJUSTMENT = 1024;
+      const _CONTRACT_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
       
       if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !== 'undefined') {
         /* do nothing */
@@ -41,13 +94,13 @@
       }
 
       var eth = new Eth(window.web3.currentProvider);
-      const token = eth.contract(tokenABI).at('0xB6eD7644C69416d67B522e20bC294A9a9B405B31');
+      const token = eth.contract(tokenABI).at(_CONTRACT_ADDRESS);
 
       el('#statistics').innerHTML = '';
 
       stats = [
         /*Description                     promise which retuns, or null         units         multiplier  null: filled in later*/
-        ['',                              null,                                 "",           1,          null     ], /* mining difficulty */
+        //['',                              null,                                 "",           1,          null     ], /* mining difficulty */
         ['Mining Difficulty',             token.getMiningDifficulty,            "",           1,          null     ], /* mining difficulty */
         ['Estimated Hashrate',            null,                                 "Mh/s",       1,          null     ], /* mining difficulty */
         ['Rewards Until Readjustment',    null,                                 "",           1,          null     ], /* mining difficulty */
@@ -74,6 +127,25 @@
         //['0xBTCpool.com Hashrate',        null,                                 "Mh/s",       1,          null     ], /* pool */
       ];
 
+      function toReadableHashrate(hashrate, should_add_b_tags) {
+        units = ['H/s', 'Kh/s', 'Mh/s', 'Gh/s', 'Th/s', 'Ph/s'];
+        var final_unit = 'Eh/s';
+        for(idx in units) {
+          var unit = units[idx];
+          if(hashrate < 1000) {
+            final_unit = unit;
+            break;
+          } else {
+            hashrate /= 1000;
+          }
+        }
+        var hashrate_string = hashrate.toFixed(2);
+        if(should_add_b_tags) {
+          hashrate_string = '<b>' + hashrate_string + '</b>';
+        }
+        return hashrate_string + ' ' + final_unit;
+      }
+
       function getValueFromStats(name, stats) {
         value = null
         stats.forEach(function(stat){
@@ -83,20 +155,25 @@
         return value
       }
 
+      function setValueInStats(name, value, stats) {
+        stats.forEach(function(stat){
+          if (stat[0] === name) {
+            stat[4] = value;
+            return;
+          }});
+      }
+
       function updateStatsThatHaveDependencies(stats) {
         /* estimated hashrate */
         difficulty = getValueFromStats('Mining Difficulty', stats)
-        // console.log("difficulty:" + difficulty)
         hashrate = difficulty * 2**22 / 600
-        hashrate /= 1000000
-        el('#EstimatedHashrate').innerHTML = "<b>" + hashrate.toFixed(2) + "</b> Mh/s";
+        hashrate /= 1000000000
+        el('#EstimatedHashrate').innerHTML = "<b>" + hashrate.toFixed(2) + "</b> Gh/s";
 
         /* supply remaining in era */
         max_supply_for_era = getValueFromStats('Max Supply for Current Era', stats)
         current_supply = getValueFromStats('Tokens Minted', stats)
         current_reward = getValueFromStats('Current Mining Reward', stats)
-        // console.log("max_supply_for_era:" + max_supply_for_era)
-        // console.log("current_supply:" + current_supply)
         supply_remaining_in_era = max_supply_for_era - current_supply; /* TODO: probably need to round to current mining reward */
         rewards_blocks_remaining_in_era = supply_remaining_in_era / current_reward;
         el('#SupplyRemaininginEra').innerHTML = "<b>" + supply_remaining_in_era.toString(10) + "</b> 0xBTC <span>(" + rewards_blocks_remaining_in_era + " blocks)</span>";
@@ -118,15 +195,13 @@
         minutes_per_reward = (seconds_per_reward / 60).toFixed(2)
         el('#CurrentAverageRewardTime').innerHTML = "<b>" + minutes_per_reward + "</b> minutes";
 
-
-
         /* estimated hashrate */
         difficulty = getValueFromStats('Mining Difficulty', stats)
-        // console.log("difficulty:" + difficulty)
         hashrate = difficulty * 2**22 / 600
         /* use current reward rate in hashrate calculation */
         hashrate *= (10 / minutes_per_reward)
-        el('#EstimatedHashrate').innerHTML = "<b>" + (hashrate / 1000000).toFixed(2) + "</b> Mh/s";
+        setValueInStats('Estimated Hashrate', hashrate, stats);
+        el('#EstimatedHashrate').innerHTML = toReadableHashrate(hashrate, true);
       }
 
       function updateLastUpdatedTime() {
@@ -147,6 +222,182 @@
           function(data) {
             el('#TotalContractOperations').innerHTML = "<b>" + data["countTxs"] + "</b> txs";
         });
+      }
+
+      function updateAllMinerInfo(eth, stats, hours_into_past){
+
+        var known_miners = {
+          "0xf3243babf74ead828ac656877137df705868fd66" : "TokenMiningPool.com",
+          "0x53ce57325c126145de454719b4931600a0bd6fc4" : "0xPool.io",
+          "0x98b155d9a42791ce475acc336ae348a72b2e8714" : "0xBTCpool.com",
+          "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : "gpu.PiZzA",
+          "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : "gpu.PiZzA",
+          "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : "gpu.PiZzA",
+          "0x69ebd94944f0dba3e9416c609fbbe437b45d91ab" : "gpu.PiZzA",
+          "0x69b85604799d16d938835852e497866a7b280323" : "gpu.PiZzA",
+          "0x69ded73bd88a72bd9d9ddfce228eadd05601edd7" : "gpu.PiZzA",
+        }
+
+        var last_reward_eth_block = getValueFromStats('Last Eth Reward Block', stats)
+        var current_eth_block = getValueFromStats('Last Eth Block', stats)
+        var estimated_network_hashrate = getValueFromStats('Estimated Hashrate', stats)
+
+        var num_eth_blocks_to_search = hours_into_past * 60 * 60 / 15;
+        log("searching last", num_eth_blocks_to_search, "blocks");
+
+        /* get all mint() transactions in the last N blocks */
+        /* more info: https://github.com/ethjs/ethjs/blob/master/docs/user-guide.md#ethgetlogs */
+        eth.getLogs({
+          fromBlock: last_reward_eth_block - num_eth_blocks_to_search,
+          toBlock: last_reward_eth_block,
+          address: '0xB6eD7644C69416d67B522e20bC294A9a9B405B31',
+          topics: ['0xcf6fbb9dcea7d07263ab4f5c3a92f53af33dffc421d9d121e1c74b307e68189d', null],
+        })
+        .then((result) => {
+          /* array of all miner addresses */
+          var miner_list = [];
+          /* array of arrays of type [eth_block, txhash, miner_addr] */
+          var mined_blocks = [];
+          /* dict where key=miner_addr and value=total_mined_block_count */
+          var miner_block_count = {};
+          /* total number of blocks mined in this filter */
+          var total_block_count = result.length;
+
+          log("got filter results:", total_block_count, "blocks");
+
+          result.forEach(function(transaction){
+            function getMinerAddressFromTopic(address_from_topic) {
+              return '0x' + address_from_topic.substr(26, 41);
+            }
+            var tx_hash = transaction['transactionHash'];
+            var block_number = parseInt(transaction['blockNumber'].toString());
+            var miner_address = getMinerAddressFromTopic(transaction['topics'][1].toString());
+
+            // log('tx_hash=', tx_hash);
+            // log('  block=', block_number);
+            // log('  miner=', miner_address)
+
+            if(!miner_list.includes(miner_address)){
+              miner_list.push(miner_address);
+            }
+
+            mined_blocks.push([block_number, tx_hash, miner_address])
+
+            if(miner_block_count[miner_address] === undefined) {
+              miner_block_count[miner_address] = 1;
+            } else {
+              miner_block_count[miner_address] += 1;
+            }
+          });
+
+          log("processed", mined_blocks.length, "blocks by", 
+              Object.keys(miner_block_count).length, "miners");
+
+          /* we will eventually show newest blocks first, so reverse the list */
+          mined_blocks.reverse();
+
+          /* collapse miner_block_count using known_miners who have multiple
+             address into a single address */
+          for(var m1 in miner_block_count) {
+            for(var m2 in miner_block_count) {
+              if(m1 === m2) {
+                continue;
+              }
+              if(known_miners[m1] !== undefined 
+                 && known_miners[m1] == known_miners[m2]) {
+                miner_block_count[m1] += miner_block_count[m2];
+                miner_block_count[m2] = 0;
+              }
+            }
+          }
+
+          /* delete miners with zero blocks (due to collapse op above) */
+          Object.keys(miner_block_count).forEach((miner_addr) => {
+            if(miner_block_count[miner_addr] == 0) {
+              delete miner_block_count[miner_addr]
+            }
+          });
+
+          /* create sorted list of miners */
+          sorted_miner_block_count = []
+          for(var m in miner_block_count) {
+            sorted_miner_block_count.push([m, miner_block_count[m]]);
+          }
+          /* descending */
+          sorted_miner_block_count.sort((a, b) => {return b[1] - a[1];});
+
+          log('done sorting miner info');
+
+          /* fill in miner info */
+          el('#minerstats').innerHTML ='<tr><th>Miner</th><th>Block Count</th><th>% of Total</th><th>Hashrate (Estimate)</th></tr>';
+          sorted_miner_block_count.forEach(function(miner_info) {
+            var addr = miner_info[0];
+            var blocks = miner_info[1];
+
+            if(known_miners[addr] !== undefined) {
+              var readable_name = known_miners[addr];
+              var address_url = 'http://' + known_miners[addr];
+            } else {
+              var readable_name = addr;
+              var address_url = 'https://etherscan.io/address/' + addr
+            }
+
+            var percent_of_total_blocks = blocks/total_block_count;
+
+            el('#minerstats').innerHTML += '<tr><td>'
+              + '<a href="' + address_url + '">'
+              + readable_name + '</a></td><td>' 
+              + blocks + '</td><td>'
+              + (100*percent_of_total_blocks).toFixed(2) + '%' + '</td><td>'
+              + toReadableHashrate(percent_of_total_blocks*estimated_network_hashrate, false) + '</td></tr>';
+          });
+
+          log('done populating miner stats');
+          // $(window).hide().show(0);
+          // $(window).trigger('resize');
+
+          var blocks_since_last_reward = current_eth_block - last_reward_eth_block;
+          var date_now = new Date();
+          var date_of_last_mint = new Date(date_now.getTime() - blocks_since_last_reward*15*1000)
+
+          function get_date_from_eth_block(eth_block) {
+            return new Date(date_of_last_mint.getTime() - ((last_reward_eth_block - eth_block)*15*1000)).toLocaleString()
+          }
+
+          /* fill in block info */
+          var dt = new Date();
+          el('#blockstats').innerHTML ='<tr><th>Time (Approx)</th><th>Eth Block #</th><th>Transaction Hash</th><th>Miner</th></tr>';
+          mined_blocks.forEach(function(block_info) {
+            var eth_block = parseInt(block_info[0]);
+            var tx_hash = block_info[1];
+            var addr = block_info[2];
+
+            if(known_miners[addr] !== undefined) {
+              var readable_name = known_miners[addr];
+              var address_url = 'http://' + known_miners[addr];
+            } else {
+              var readable_name = addr.substr(0, 20) + '...';
+              var address_url = 'https://etherscan.io/address/' + addr;
+            }
+
+            var transaction_url = 'https://etherscan.io/tx/' + tx_hash;
+            var block_url = 'https://etherscan.io/block/' + eth_block;
+
+            el('#blockstats').innerHTML += '<tr><td>'
+              + get_date_from_eth_block(eth_block) + '</td><td>'
+              + '<a href="' + block_url + '">' + eth_block + '</td><td>'
+              + '<a href="' + transaction_url + '">' 
+              + tx_hash.substr(0, 20) + '...</a></td><td align="right" style="text-overflow:ellipsis;white-space: nowrap;overflow: hidden;">' 
+              + '<a href="' + address_url + '"><div>' + readable_name + '</div></td></tr>';
+          });
+
+          log('done populating block stats');
+          
+        })
+        .catch((error) => {
+          log('error filtering txs:', error);
+        });
+
       }
 
       function createStatsTable(){
@@ -193,7 +444,6 @@
 
           set_value = function(stats, stat_name, stat_unit, stat_multiplier, save_fn) {
             return function(result) {
-              //console.log("setting " + stat_name + " with " + result + " type " + typeof result)
               try {
                 result = result[0].toString(10)
               } catch (err) {
@@ -203,12 +453,12 @@
               result = result.toString(10)*stat_multiplier
               save_fn(result)
 
-              //console.log("set " + stat_name + " with " + result.toString(10))
               el('#' + stat_name.replace(/ /g,"")).innerHTML = "<b>" + result + "</b> " + stat_unit;
 
               /* once we have grabbed all stats, update the calculated ones */
               if(areAllBlockchainStatsLoaded(stats)) {
                 updateStatsThatHaveDependencies(stats);
+                updateAllMinerInfo(eth, stats, 24);
               }
             }
           }
@@ -222,86 +472,14 @@
         updateLastUpdatedTime();
       }
 
-
-//       const filter = new eth.filter.Filter({ delay: 300 })
-//       .new({ fromBlock: "latest" })
-//       .then((result) => {
-//         // result <BigNumber ...> filterId
-//       })
-//       .catch((error) => {
-//         // result null
-//       });
-//       filter.watch((result) => {
-//           console.log("got a block update")
-//           console.log(result);
-//         // result [{...}, ...] (fires multiple times)
-//       });
-// //filter.uninstall(cb);
-
-
-      const filter = new eth.filter.BlockFilter()
-      filter.watch((result) => {
-        // result [{...}, ...] (fires multiple times)
-          console.log("got block update")
-      });
-      //filter.uninstall(cb);
-
-
-      // function pollForChanges(filter_id) {
-      //   eth.getFilterChanges(filter_id)
-      //   .then((result) => {
-      //     console.log("got block update")
-      //     pollForChanges()
-      //   })
-      // }
-
       createStatsTable();
       updateStatsTable(stats);
-      //setupNewBlockFilter();
 
-      // eth.newBlockFilter()
-      // .then((result) => {
-      //   console.log("got filter")
-      //   console.log(result);
-      //   filter_id = result[0]
-      //   //updateStatsTable();
-      //   console.log("res")
-      //   console.log(filter_id)
-      //   pollForChanges(filter_id);
-      // })
-      // .catch((error) => {
-      //   console.log("got a block update error")
-      //   // null
-      // });
-
-
-      // eth.newBlockFilter()
-      // .then((result) => {
-      //   console.log("got a block update")
-      //   updateStatsTable();
-      // })
-      // .catch((error) => {
-      //   // null
-      // });
-
-      // eth.statistics(function(accountsError, statistics) {
-      //   if (accountsError) {
-      //     el('#statistics').innerHTML = 'Hmm.. looks like there was an error: '
-      //       + String(accountsError);
-      //   }
-
-
-      //   statistics.forEach(function(account){
-      //     el('#statistics').innerHTML += '<tr><td>'
-      //       + account + '</td><td id="accountBalance_'
-      //       + account + '"></td></tr>';
-
-      //     eth.getBalance(account, function(balanceError, balance){
-      //       el('#accountBalance_' + account).innerHTML += Eth.fromWei(balance, 'ether')
-      //         + ' ether';
-      //     });
-      //   });
-      // });
+    </script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+         log("DOMready");
+      });
     </script>
   </body>
 </html>
