@@ -33,11 +33,11 @@
         <div class="column"><h1>0xBTC</h1></div>
         <div class="column"><h1>Blockchain Statistics</h1></div>
       </div>
-    </div>
-    <div class="container">
+      <div class="row">
+        <div class="column"><h5>Current Contract Status</h5></div>
+      </div>
       <div class="row">
         <div class="column">
-          <h5>Current Contract Status</h5>
           <table>
             <!--<thead> <tr> <th> </th> <th> </th> </tr> </thead>-->
             <tbody id="statistics"> 
@@ -47,8 +47,10 @@
         </div>
       </div>
       <div class="row">
+        <div class="column"><h5>Block distribution since last retarget</h5></div>
+      </div>
+      <div class="row">
         <div class="column">
-          <h5>Block distribution since last retarget</h5>
           <table>
             <!--<thead id="minerstats"> <tr> <th> </th> <th> </th> </tr> </thead>-->
             <tbody id="minerstats"> 
@@ -58,8 +60,10 @@
         </div>
       </div>
       <div class="row">
+        <div class="column"><h5>Blocks solved since last retarget</h5></div>
+      </div>
+      <div class="row">
         <div class="column">
-          <h5>Blocks solved since last retarget</h5>
           <table>
             <!--<thead id="minerstats"> <tr> <th> </th> <th> </th> </tr> </thead>-->
             <tbody id="blockstats"> 
@@ -230,15 +234,16 @@
       function updateAllMinerInfo(eth, stats, hours_into_past){
 
         var known_miners = {
-          "0xf3243babf74ead828ac656877137df705868fd66" : "TokenMiningPool.com",
-          "0x53ce57325c126145de454719b4931600a0bd6fc4" : "0xPool.io",
-          "0x98b155d9a42791ce475acc336ae348a72b2e8714" : "0xBTCpool.com",
-          "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : "gpu.PiZzA",
-          "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : "gpu.PiZzA",
-          "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : "gpu.PiZzA",
-          "0x69ebd94944f0dba3e9416c609fbbe437b45d91ab" : "gpu.PiZzA",
-          "0x69b85604799d16d938835852e497866a7b280323" : "gpu.PiZzA",
-          "0x69ded73bd88a72bd9d9ddfce228eadd05601edd7" : "gpu.PiZzA",
+          "0xf3243babf74ead828ac656877137df705868fd66" : [ "Token Mining Pool", "http://TokenMiningPool.com" ],
+          "0x53ce57325c126145de454719b4931600a0bd6fc4" : [ "0xPool",            "http://0xPool.io" ],
+          "0x98b155d9a42791ce475acc336ae348a72b2e8714" : [ "0xBTCpool",         "http://0xBTCpool.com" ],
+          "0x363b5534fb8b5f615583c7329c9ca8ce6edaf6e6" : [ "mike.rs pool",      "http://mike.rs:3000" ],
+          "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : [ "PiZzA pool",        "http://gpu.PiZzA" ],
+          "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : [ "PiZzA pool",        "http://gpu.PiZzA" ],
+          "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : [ "PiZzA pool",        "http://gpu.PiZzA" ],
+          "0x69ebd94944f0dba3e9416c609fbbe437b45d91ab" : [ "PiZzA pool",        "http://gpu.PiZzA" ],
+          "0x69b85604799d16d938835852e497866a7b280323" : [ "PiZzA pool",        "http://gpu.PiZzA" ],
+          "0x69ded73bd88a72bd9d9ddfce228eadd05601edd7" : [ "PiZzA pool",        "http://gpu.PiZzA" ],
         }
 
         var last_reward_eth_block = getValueFromStats('Last Eth Reward Block', stats)
@@ -309,7 +314,8 @@
                 continue;
               }
               if(known_miners[m1] !== undefined 
-                 && known_miners[m1] == known_miners[m2]) {
+                 && known_miners[m2] !== undefined 
+                 && known_miners[m1][0] == known_miners[m2][0]) {
                 miner_block_count[m1] += miner_block_count[m2];
                 miner_block_count[m2] = 0;
               }
@@ -334,14 +340,15 @@
           log('done sorting miner info');
 
           /* fill in miner info */
-          el('#minerstats').innerHTML ='<tr><th>Miner</th><th>Block Count</th><th>% of Total</th><th>Hashrate (Estimate)</th></tr>';
+          var innerhtml_buffer = '<tr><th>Miner</th><th>Block Count</th>'
+            + '<th>% of Total</th><th>Hashrate (Estimate)</th></tr>';
           sorted_miner_block_count.forEach(function(miner_info) {
             var addr = miner_info[0];
             var blocks = miner_info[1];
 
             if(known_miners[addr] !== undefined) {
-              var readable_name = known_miners[addr];
-              var address_url = 'http://' + known_miners[addr];
+              var readable_name = known_miners[addr][0];
+              var address_url = known_miners[addr][1];
             } else {
               var readable_name = addr;
               var address_url = 'https://etherscan.io/address/' + addr
@@ -349,14 +356,15 @@
 
             var percent_of_total_blocks = blocks/total_block_count;
 
-            el('#minerstats').innerHTML += '<tr><td>'
+
+            innerhtml_buffer += '<tr><td>'
               + '<a href="' + address_url + '">'
               + readable_name + '</a></td><td>' 
               + blocks + '</td><td>'
               + (100*percent_of_total_blocks).toFixed(2) + '%' + '</td><td>'
               + toReadableHashrate(percent_of_total_blocks*estimated_network_hashrate, false) + '</td></tr>';
           });
-
+          el('#minerstats').innerHTML = innerhtml_buffer;
           log('done populating miner stats');
           // $(window).hide().show(0);
           // $(window).trigger('resize');
@@ -371,15 +379,16 @@
 
           /* fill in block info */
           var dt = new Date();
-          el('#blockstats').innerHTML ='<tr><th>Time (Approx)</th><th>Eth Block #</th><th>Transaction Hash</th><th>Miner</th></tr>';
+          var innerhtml_buffer = '<tr><th>Time (Approx)</th><th>Eth Block #</th>'
+            + '<th>Transaction Hash</th><th>Miner</th></tr>';
           mined_blocks.forEach(function(block_info) {
             var eth_block = parseInt(block_info[0]);
             var tx_hash = block_info[1];
             var addr = block_info[2];
 
             if(known_miners[addr] !== undefined) {
-              var readable_name = known_miners[addr];
-              var address_url = 'http://' + known_miners[addr];
+              var readable_name = known_miners[addr][0];
+              var address_url = known_miners[addr][1];
             } else {
               var readable_name = addr.substr(0, 20) + '...';
               var address_url = 'https://etherscan.io/address/' + addr;
@@ -388,14 +397,14 @@
             var transaction_url = 'https://etherscan.io/tx/' + tx_hash;
             var block_url = 'https://etherscan.io/block/' + eth_block;
 
-            el('#blockstats').innerHTML += '<tr><td>'
+            innerhtml_buffer  += '<tr><td>'
               + get_date_from_eth_block(eth_block) + '</td><td>'
               + '<a href="' + block_url + '">' + eth_block + '</td><td>'
               + '<a href="' + transaction_url + '">' 
               + tx_hash.substr(0, 20) + '...</a></td><td align="right" style="text-overflow:ellipsis;white-space: nowrap;overflow: hidden;">' 
               + '<a href="' + address_url + '"><div>' + readable_name + '</div></td></tr>';
           });
-
+          el('#blockstats').innerHTML = innerhtml_buffer;
           log('done populating block stats');
           
         })
@@ -463,7 +472,8 @@
               /* once we have grabbed all stats, update the calculated ones */
               if(areAllBlockchainStatsLoaded(stats)) {
                 updateStatsThatHaveDependencies(stats);
-                updateAllMinerInfo(eth, stats, 24);
+                //updateAllMinerInfo(eth, stats, 24);
+                setTimeout(()=>{updateAllMinerInfo(eth, stats, 24)}, 0);
               }
             }
           }
