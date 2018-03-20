@@ -235,14 +235,12 @@ Attributions:
       const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";
       
       if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !== 'undefined') {
-        /* do nothing */
+        var eth = new Eth(window.web3.currentProvider);
       } else {
-          el('#statistics').innerHTML = 
-            '<tr><td colspan="2">This site requires the <a href="https://metamask.io/">metamask</a> extension or <a href="https://brave.com/">brave</a> browser.</td></tr>';
-          fail;
+        var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"));
+        log("warning: no web3 provider found, using infura.io as backup provider")
       }
 
-      var eth = new Eth(window.web3.currentProvider);
       const token = eth.contract(tokenABI).at(_CONTRACT_ADDRESS);
 
       el('#statistics').innerHTML = '';
