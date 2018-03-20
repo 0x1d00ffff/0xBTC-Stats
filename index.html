@@ -226,7 +226,7 @@ Attributions:
     
     <script type="text/javascript">
 
-      log('0xBitcoin Stats v0.0.2');
+      log('0xBitcoin Stats v0.0.3');
 
       var el = function(id){ return document.querySelector(id); };
       var stats_updated_count = 0;
@@ -603,8 +603,7 @@ Attributions:
             var transaction_url = 'https://etherscan.io/tx/' + tx_hash;
             var block_url = 'https://etherscan.io/block/' + eth_block;
 
-
-            log('hexcolor:', hexcolor, address_url);
+            //log('hexcolor:', hexcolor, address_url);
 
             innerhtml_buffer  += '<tr><td>'
               + get_date_from_eth_block(eth_block) + '</td><td>'
