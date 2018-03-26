@@ -4,6 +4,7 @@ Attributions:
   ionicons - http://ionicons.com/
   ethjs - https://github.com/ethjs/ethjs
   Google Material Design Color Palatte - https://htmlcolorcodes.com/color-chart/material-design-color-chart/
+  Chart.js - http://www.chartjs.org/
 -->
 
 <html>
@@ -11,6 +12,7 @@ Attributions:
     <meta charset='utf-8'>
     <!-- jquery is here because scripts need it early on. may want to move other js imports here. -->
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
 
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.2.3/milligram.min.css">
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
@@ -32,7 +34,8 @@ Attributions:
       }
       var globalTimerStart = Date.now();
 
-      if(window.location.search.substr(1).includes('theme=dark1')) {
+      let searchParams = new URLSearchParams(window.location.search)
+      if(searchParams.has('theme') && searchParams.get('theme') == 'dark1') {
         $('head').append('<link rel="stylesheet" type="text/css" href="css/themes/dark1.css">');
       }
     </script>
@@ -47,12 +50,14 @@ Attributions:
         <div class="column">
           <!--<a href="#miners">miners</a>  |  blocks  |  block rate  |  difficulty  |  hashrate-->
           <ul id="navigation" class="nav">
-            <li class="nav"><a href="#miners">miners</a></li>
-            <li class="nav"><a href="#blocks">blocks</a></li>
+            <li class="nav"><a href="./?page=stats#">stats</a></li>
+            <li class="nav"><a href="./?page=stats#miners">miners</a></li>
+            <li class="nav"><a href="./?page=stats#blocks">blocks</a></li>
             <!-- <li class="nav"><a href="#blockrate">block rate</a></li> -->
             <!-- <li class="nav"><a href="#difficulty">difficulty</a></li> -->
             <!-- <li class="nav"><a href="#hashrate">hashrate</a></li> -->
-            <li class="nav"><a href="#miningcalculator">mining calculator</a></li>
+            <li class="nav"><a href="./?page=stats#miningcalculator">mining calculator</a></li>
+            <li class="nav"><a href="./?page=graphs#difficulty">difficulty</a></li>
           </ul>
         </div>
       </div>
@@ -64,46 +69,95 @@ Attributions:
         <div class="column"><button type="button" onClick="location.href='#difficulty'" class="nav-difficulty">DIFFICULTY</button></div>
         <div class="column"><button type="button" onClick="location.href='#hashrate'" class="nav-hashrate">HASHRATE</button></div>
       </div>-->
-      <div class="row">
-        <div class="column"><h4 class="add-top-padding">Current Contract Status</h4></div>
-      </div>
-      <div class="row">
-        <div class="column">
-          <table>
-            <!--<thead> <tr> <th> </th> <th> </th> </tr> </thead>-->
-            <tbody id="statistics">
-              <tr><td colspan="2">Loading info from the blockchain...</td></tr>
-            </tbody>
-          </table>
+      <div id="row-statistics">
+        <div class="row">
+          <div class="column"><h4 class="add-top-padding">Current Contract Status</h4></div>
+        </div>
+        <div class="row">
+          <div class="column">
+            <table>
+              <!--<thead> <tr> <th> </th> <th> </th> </tr> </thead>-->
+              <tbody id="statistics">
+                <tr><td colspan="2">Loading info from the blockchain...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-      <div class="row">
-        <div class="column"><h4 class="add-top-padding"><a name="miners"></a>Block distribution since last retarget</h4></div>
-      </div>
-      <div class="row">
-        <div class="column">
-          <table>
-            <!--<thead id="minerstats"> <tr> <th> </th> <th> </th> </tr> </thead>-->
-            <tbody id="minerstats">
-              <tr><td colspan="3">Loading info from the blockchain...</td></tr>
-            </tbody>
-          </table>
+      <div id="row-miners">
+        <div class="row">
+          <div class="column"><h4 class="add-top-padding"><a name="miners"></a>Block distribution since last retarget</h4></div>
+        </div>
+        <div class="row">
+          <div class="column">
+            <table>
+              <!--<thead id="minerstats"> <tr> <th> </th> <th> </th> </tr> </thead>-->
+              <tbody id="minerstats">
+                <tr><td colspan="3">Loading info from the blockchain...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-      <div class="row">
-        <div class="column"><h4 class="add-top-padding"><a name="blocks"></a>Blocks solved since last retarget</h4></div>
-      </div>
-      <div class="row">
-        <div class="column">
-          <table>
-            <!--<thead id="minerstats"> <tr> <th> </th> <th> </th> </tr> </thead>-->
-            <tbody id="blockstats">
-              <tr><td colspan="3">Loading info from the blockchain...</td></tr>
-            </tbody>
-          </table>
+      <div id="row-blocks">
+        <div class="row">
+          <div class="column"><h4 class="add-top-padding"><a name="blocks"></a>Blocks solved since last retarget</h4></div>
+        </div>
+        <div class="row">
+          <div class="column">
+            <table>
+              <!--<thead id="minerstats"> <tr> <th> </th> <th> </th> </tr> </thead>-->
+              <tbody id="blockstats">
+                <tr><td colspan="3">Loading info from the blockchain...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-      <!--
+    
+      <div id="row-calculator">
+        <div class="row">
+          <div class="column"><h4 class="add-top-padding"><a name="miningcalculator"></a>Mining calculator</h4></div>
+        </div>
+        <div class="row">
+          <div class="column">
+            <p>
+              <em>Coming soon! For now, you can use this:</em>
+            </p>
+            <p>
+              <em>tokens per day = 4,320,000  x  hashrate  /  (difficulty  x  2<sup>22</sup>)</em>
+              <br>
+              Note: this does <strong>not</strong> factor pool fees. Subtract 15% from the final amount.
+            </p>
+            <p>
+              Above is based on the hashrate equation:
+              <br>
+              time to solve a block in seconds = difficulty x 2<sup>22</sup> / hashrate
+            </p>
+          </div>
+        </div>
+      </div>
+
+
+      <div id="row-difficulty">
+        <div class="row">
+          <div class="column"><h4 class="add-top-padding"><a name="difficulty"></a>Difficulty over the last 21 days</h4></div>
+        </div>
+        <div class="row">
+          <div class="column">
+            Note: Expetimental. If graph is stuck at 100%, refresh the page. Timestamps are estimated (should be within 10%). 
+          </div>
+        </div>
+        <div class="row">
+          <div class="column">
+            <div id='difficultystats'>
+              Loading info from the blockchain...
+            </div>
+          </div>
+        </div>
+      </div>
+
+<!--
       <div class="row">
         <div class="column"><h4 class="add-top-padding"><a name="blockrate"></a>Minutes per reward</h4></div>
       </div>
@@ -116,18 +170,7 @@ Attributions:
           </table>
         </div>
       </div>
-      <div class="row">
-        <div class="column"><h4 class="add-top-padding"><a name="difficulty"></a>Difficulty over time</h4></div>
-      </div>
-      <div class="row">
-        <div class="column">
-          <table>
-            <tbody id="difficultystats">
-              <tr><td colspan="3">Loading info from the blockchain...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      
       <div class="row">
         <div class="column"><h4 class="add-top-padding"><a name="hashrate"></a>Network hashrate over time</h4></div>
       </div>
@@ -140,36 +183,13 @@ Attributions:
           </table>
         </div>
       </div>
-    -->
-      <div class="row">
-        <div class="column"><h4 class="add-top-padding"><a name="miningcalculator"></a>Mining calculator</h4></div>
-      </div>
-      <div class="row">
-        <div class="column">
-          <p>
-            <em>Coming soon! For now, you can use this:</em>
-          </p>
-          <p>
-            <em>tokens per day = 4,320,000  x  hashrate  /  (difficulty  x  2<sup>22</sup>)</em>
-            <br>
-            Note: this does <strong>not</strong> factor pool fees. Subtract 15% from the final amount.
-          </p>
-          <p>
-            Above is based on the hashrate equation:
-            <br>
-            time to solve a block in seconds = difficulty x 2<sup>22</sup> / hashrate
-          </p>
+-->
 
-          <!-- <table>
-            <tbody id="difficultystats">
-              <tr><td colspan="3"></td></tr>
-            </tbody>
-          </table> -->
+      <div id="row-footer">
+        <div class="row add-top-padding">
+          <div class="column">Data fetched at: <span id="LastUpdatedTime">00:00:00</span></div>
+          <div class="column">show some <font color="#C0392B">❤</font> <a href="https://etherscan.io/address/0x1d00FFffB205CC0C5a51E7c77a7668A8B90BBb90">0x1d00FFffB205CC0C5a51E7c77a7668A8B90BBb90</a></div>
         </div>
-      </div>
-      <div class="row add-top-padding">
-        <div class="column">Data fetched at: <span id="LastUpdatedTime">00:00:00</span></div>
-        <div class="column">show some <font color="#C0392B">❤</font> <a href="https://etherscan.io/address/0x1d00FFffB205CC0C5a51E7c77a7668A8B90BBb90">0x1d00FFffB205CC0C5a51E7c77a7668A8B90BBb90</a></div>
       </div>
     </div>
 
@@ -188,7 +208,18 @@ Attributions:
         el('#statistics').innerHTML = "Sorry, failed to load jquery. Try again later.";
         fail;
       } finally {
-        updateAllPageInfo();
+        let searchParams = new URLSearchParams(window.location.search)
+        if(!searchParams.has('page')
+          || searchParams.get('page') == 'stats') {
+          if(!searchParams.has('page')){
+            addToURL('?page=stats');
+          }
+          log('STATS selected');
+          updateAllStats();
+        }else if(searchParams.get('page') == 'graphs') {
+          log('GRAPHS selected');
+          updateGraphData();
+        }
       }
     </script>
   </body>

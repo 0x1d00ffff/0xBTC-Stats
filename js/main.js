@@ -1,10 +1,18 @@
 
+function addToURL(value){
+    if (history.pushState) {
+        var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + value;
+        window.history.pushState({path:newurl},'',newurl);
+    }
+ }
+
 log('0xBitcoin Stats v0.0.3');
 
 var stats_updated_count = 0;
 const _BLOCKS_PER_READJUSTMENT = 1024;
 const _CONTRACT_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
 const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";
+const _MAXIMUM_TARGET_BN = new Eth.BN(_MAXIMUM_TARGET_STR, 10);
 
 if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !== 'undefined') {
   var eth = new Eth(window.web3.currentProvider);
@@ -14,8 +22,6 @@ if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !==
 }
 
 const token = eth.contract(tokenABI).at(_CONTRACT_ADDRESS);
-
-el('#statistics').innerHTML = '';
 
 stats = [
   /*Description                     promise which retuns, or null         units         multiplier  null: filled in later*/
@@ -45,6 +51,21 @@ stats = [
   //['gpu.PiZzA Hashrate',            null,                                 "Mh/s",       1,          null     ], /* pool */
   //['0xBTCpool.com Hashrate',        null,                                 "Mh/s",       1,          null     ], /* pool */
 ];
+
+var latest_eth_block = null;
+eth.blockNumber().then((value)=>{
+  //log('asdhgaksjdhfgaksjdhgfakjsdhgfkasjhdfgkasjdhfgaksjdhfgaksjdhfagksjdkasjdhg');
+  //log('asdhgaksjdhfgaksjdhgfakjsgaksjdhfgaksjdhfagksjdkasjdhg');
+  //log('asdhgaksjdhfgaksjdhgfakjsdhgfkasjhdfgkasjdhfgaksjdhfgaksjdhfagksjdkasjdhg');
+  latest_eth_block = parseInt(value.toString(10), 10);
+});
+function ethBlockNumberToTimestamp(eth_block) {
+  //log('converting', eth_block)
+  //log('latest e', latest_eth_block)
+  /* TODO: use web3 instead, its probably more accurate */
+  /* blockDate = new Date(web3.eth.getBlock(startBlock-i+1).timestamp*1000); */
+  return new Date(Date.now() - ((latest_eth_block - eth_block)*15*1000)).toLocaleString()
+}
 
 function toReadableHashrate(hashrate, should_add_b_tags) {
   units = ['H/s', 'Kh/s', 'Mh/s', 'Gh/s', 'Th/s', 'Ph/s'];
@@ -80,6 +101,10 @@ function setValueInStats(name, value, stats) {
       stat[4] = value;
       return;
     }});
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function updateStatsThatHaveDependencies(stats) {
@@ -143,46 +168,270 @@ function updateThirdPartyAPIs() {
   });
 }
 
-async function updateDifficultyGraph(eth, stats){
+function showDifficultyGraph(eth, cv_obj) {
+  el('#difficultystats').innerHTML = '<canvas id="chart-difficulty" width="10rem" height="6rem"></canvas>';
+  var ctx = document.getElementById('chart-difficulty').getContext('2d');
+  var all_values = cv_obj.allValues;
+  var data = []
+
+  for (var i = 0; i < all_values.length; i++) {
+    data.push({
+      x: all_values[i][0],
+      y: _MAXIMUM_TARGET_BN.div(all_values[i][1]),
+    })
+    // labels.push(all_values[i][0]);
+    // data.push(_MAXIMUM_TARGET_BN.div(all_values[i][1]));
+  }
+
+  //log('textt', eth.getBlockByNumber(5000000, true).timestamp.toString());
+
+  // function blockNumToTimeStr(block_num) {
+  //   var block = await eth.getBlockByNumber(block_num, true);
+  //   //log('block:', block);
+  //   log('block.timestamp:', block.timestamp.toString(10));
+  //   return block.timestamp.toString(10);
+  // }
+
+  var chart = new Chart.Scatter(ctx, {
+    // The type of chart we want to create
+    type: 'line',
+
+    // The data for our dataset
+    data: {
+        //labels: labels,
+        datasets: [{
+            label: "Difficulty",
+            showLine: true,
+            steppedLine: 'before',
+            backgroundColor: 'rgb(255, 99, 132)',
+            borderColor: 'rgb(255, 99, 132)',
+            data: data,
+            fill: false,
+        }]
+    },
+
+    // Configuration options go here
+    options: {
+      tooltips: {
+        callbacks: {
+          label: function(tooltipItem, data) {
+            var label = ''
+
+            /* add series label */
+            // label += data.datasets[tooltipItem.datasetIndex].label || '';
+            // if (label) {
+            //   label += ': ';
+            // }
+            
+            label += "Eth block #" + tooltipItem.xLabel;
+            
+            label += ' ('
+            label += ethBlockNumberToTimestamp(tooltipItem.xLabel);
+            label += ') : '
+            label += Math.round(tooltipItem.yLabel * 100) / 100;
+            return label;
+          }
+        }
+      },
+      scales: {
+        xAxes: [{
+          ticks: {
+            // Include a dollar sign in the ticks
+            callback: function(value, index, values) {
+              return ethBlockNumberToTimestamp(value);
+              //return 'x' + value;
+              //return '$' + value;
+            },
+            stepSize: 1000,
+          }
+        }]
+      }
+    },
+    });
+}
+
+async function updateDifficultyGraph(eth){
   /*
   note: this is implementation of diff. in contract:
-      function getMiningDifficulty() public constant returns (uint)
+      function getMiningDifficulty() public constant returns (uint) 
         return _MAXIMUM_TARGET.div(miningTarget);
   */
-  var contract = '0xB6eD7644C69416d67B522e20bC294A9a9B405B31';
-  var maxBlocks = 5000;
+  var contract_address = '0xB6eD7644C69416d67B522e20bC294A9a9B405B31';
+  var max_blocks = 21*24*60*(60/15); /* 21 days */
+  var initial_search_points = 21; /* in some crazy world where readjustments happen every day, this will catch all changes */
   var previous = 0;
-  var current_eth_block = getValueFromStats('Last Eth Block', stats);
+  //var current_eth_block = getValueFromStats('Last Eth Block', stats);
+  var current_eth_block = parseInt((await eth.blockNumber()).toString(10), 10);
 
-  var max_target = new Eth.BN(_MAXIMUM_TARGET_STR, 10);
+  class contractValueOverTime {
+    constructor(eth, contract_address, storage_index) {
+      this.eth = eth;
+      this.contract_address = contract_address;
+      this.storage_index = storage_index;
+      this.sorted = false;
+      this.states = [];
+      /* since values are added asynchronously, we store the length we
+      expect state to be once all values are pushed */
+      this.expected_state_length = 0;
+    }
+    get allValues() {
+      return this.states;
+    }
+    printValuesToLog() {
+      this.states.forEach((value) => {
+        log('block #', value[0]);
+        log('block #', value[0], 'ts', value[2], 'diff:', _MAXIMUM_TARGET_BN.div(value[1]).toString(10));
+      });
+    }
+    addValueAtEthBlock(eth_block_num) {
+      /* read value from contract @ specific block num, save to this.states
 
-  var a = await eth.getStorageAt('0xB6eD7644C69416d67B522e20bC294A9a9B405B31', new Eth.BN('20', 10), 'latest');
-  var b = await eth.getStorageAt('0xB6eD7644C69416d67B522e20bC294A9a9B405B31', new Eth.BN('20', 10), 'earliest')
-  console.log(a, b);
+         detail: load eth provider with a request to load value from 
+         block @ num. Callback is anonymous function which pushes the 
+         value onto this.states */
+      this.expected_state_length += 1;
+      this.sorted = false;
 
-  return;
+      log('requested val @ block', eth_block_num)
 
-  for (var i = 1; i < maxBlocks; i++) { /* Be careful: we go *back* in time */
-      eth.getStorageAt(contract, 2, current_eth_block-i)
-      .then((result) => {
-        if (result != previous) {
-            /* TODO Where to find msg.sender? We probably have to loop
-             * over the transactions in the block can call
-             * eth.getTransaction */
-            //blockDate = new Date(eth.getBlock(current_eth_block-i+1).timestamp*1000);
-            console.log("Block #" + (current_eth_block-i+1) +  " (" + " "
-                +  ") : " + previous);
-            /* What if there are two changes in a single block? The
-             * documentation of getStorageAt seems silent about that */
-            previous = result;
+      var saveState = function(block_states, eth_block_num) {
+        return function (value) {
+          /* TODO: probably a way to convert w/o going through hex_str */
+          //log('value:', value)
+          var hex_str = value.substr(2, 64);
+          var value_bn = new Eth.BN(hex_str, 16)
+          // var difficulty = max_target.div(value_bn)
+
+          // console.log("Block #", eth_block_num, ":", value);
+          // log("Block #", eth_block_num, ":", difficulty.toString(10));
+
+          /* [block num, value @ block num, timestamp of block num] */
+          var len = block_states.push([eth_block_num, value_bn, '']);
+
+          function setValue(save_fn) {
+            return function(value) {
+              save_fn(value);
+            }
+          }
+
+          /* TODO: uncomment this to use timestamps embedded in block */
+          // eth.getBlockByNumber(eth_block_num, true).then(setValue((value)=>{block_states[len-1][2]=value.timestamp.toString(10)}))
+
         }
-      }).catch((error) => {
+      }
+      this.eth.getStorageAt(this.contract_address, 
+                            new Eth.BN(this.storage_index, 10),
+                            eth_block_num.toString(10))
+      .then(
+        saveState(this.states, eth_block_num)
+      ).catch((error) => {
         log('error reading block storage:', error);
-      })
+      });
+    }
+    areAllValuesLoaded() {
+      return this.expected_state_length == this.states.length;
+    }
+    // onAllValuesLoaded(callback) {
+    //   this.on_all_values_loaded_callback = callback;
+    // }
+    sortValues() {
+      log('sorting values..');
+      this.states.sort((a, b) => {
+        //log('a', a[0], 'b', b[0]);
+        return a[0] - b[0];
+      });
+      this.sorted = true;
+    }
+    /* iterate through already loaded values. Wherever a state change is
+    seen, queue another value load from the blockchain halfway between 
+    state A and state B. Goal is to get closer to the actual eth block
+    number where the state transition occurs. */
+    increaseTransitionResolution() {
+      if(!this.sorted) {
+        this.sortValues();
+      }
+
+      var last_block_number = this.states[0][0];
+      var last_value = this.states[0][1];
+      for(var i = 0; i < this.states.length; i++) {
+        var block_number = this.states[i][0];
+        var value = this.states[i][1];
+        if(last_value.cmp(value) != 0) {
+          this.addValueAtEthBlock(((last_block_number + block_number)/2));
+        }
+        last_value = value;
+        last_block_number = block_number;
+      }
+    }
+    /* iterate through already loaded values. If 3 or more repeating
+    values are detected, remove all middle values so only the first and
+    last state with that value remain  */
+    deduplicate() {
+      if(!this.sorted) {
+        this.sortValues();
+      }
+      /* we actually go backwards so we don't screw up array indexing
+      as we remove values along the way */
+      for(var i = this.states.length-1; i > 2 ; i--) {
+        var v1 = this.states[i][1];
+        var v2 = this.states[i-1][1];
+        var v3 = this.states[i-2][1];
+
+        if (v1.cmp(v2) == 0
+            && v2.cmp(v3) == 0) {
+          /* remove one item at location i-1 (middle value) */
+          this.states.splice(i-1, 1);
+        }
+      }
+    }
   }
-  //blockDate = new Date(eth.getBlock(current_eth_block-maxBlocks).timestamp*1000);
-  console.log("Somewhere before block #" +(current_eth_block-maxBlocks) +  " (block of "
-          +  ") : " + previous);
+
+  var block_states = [];
+
+  // var a = await eth.getStorageAt('0xB6eD7644C69416d67B522e20bC294A9a9B405B31', new Eth.BN('20', 10), 'latest');
+  // var b = await eth.getStorageAt('0xB6eD7644C69416d67B522e20bC294A9a9B405B31', new Eth.BN('20', 10), 'earliest');
+  // console.log(a, b);
+
+  var cv = new contractValueOverTime(eth, contract_address, '11');
+
+  for (var target_block = current_eth_block;
+       target_block > current_eth_block-max_blocks;
+       target_block = target_block - (max_blocks / initial_search_points)) {
+      // console.log("check #" + (target_block));
+
+    cv.addValueAtEthBlock(target_block);
+  }
+
+  // while (!cv.areAllValuesLoaded()) {
+  //   log('waiting for values to load 1...')
+  //   await sleep(300);
+  // }
+
+  //cv.sortValues();
+
+  cv.printValuesToLog();
+
+  for (var i = 0; i < 6; i++) {
+    log('increasing resolution..', i+1, '/ 6');
+    while (!cv.areAllValuesLoaded()) {
+      log('waiting in increaseTransitionResolution...')
+      await sleep(300);
+    }
+    cv.increaseTransitionResolution();
+    el('#difficultystats').innerHTML = 'Loading info from the blockchain... ' + (100*(i+1)/6).toFixed(0) + '%';
+  }
+
+  while (!cv.areAllValuesLoaded()) {
+    log('waiting for values to load 2...')
+    await sleep(300);
+  }
+
+  log('deduplicating..');
+  cv.deduplicate();
+
+  cv.printValuesToLog();
+
+  showDifficultyGraph(eth, cv);
 }
 
 /* TODO use hours_into_past */
@@ -468,7 +717,6 @@ function updateStatsTable(stats){
         if(areAllBlockchainStatsLoaded(stats)) {
           updateStatsThatHaveDependencies(stats);
           setTimeout(()=>{updateAllMinerInfo(eth, stats, 24)}, 0);
-          // setTimeout(()=>{updateDifficultyGraph(eth, stats)}, 0);
         }
       }
     }
@@ -482,7 +730,21 @@ function updateStatsTable(stats){
   updateLastUpdatedTime();
 }
 
-function updateAllPageInfo() {
+function updateGraphData() {
+  // createStatsTable();
+  // updateStatsTable(stats);
+  //el('#stats-row').innerHTML = "";
+  el('#row-statistics').innerHTML = ''; // may not need this
+  el('#row-miners').innerHTML = ''; // may not need this
+  el('#row-blocks').innerHTML = ''; // may not need this
+  el('#row-calculator').innerHTML = ''; // may not need this
+  //showDifficultyGraph('');
+  setTimeout(()=>{updateDifficultyGraph(eth)}, 0);
+}
+
+function updateAllStats() {
+  el('#statistics').innerHTML = ''; // may not need this
+  el('#row-difficulty').innerHTML = ''; // may not need this
   createStatsTable();
   updateStatsTable(stats);
 }
