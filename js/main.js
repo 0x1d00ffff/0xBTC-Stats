@@ -6,7 +6,7 @@ function addToURL(value){
     }
  }
 
-log('0xBitcoin Stats v0.0.3');
+log('0xBitcoin Stats v0.0.4');
 
 var stats_updated_count = 0;
 const _BLOCKS_PER_READJUSTMENT = 1024;
@@ -14,12 +14,15 @@ const _CONTRACT_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
 const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";
 const _MAXIMUM_TARGET_BN = new Eth.BN(_MAXIMUM_TARGET_STR, 10);
 
-if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !== 'undefined') {
-  var eth = new Eth(window.web3.currentProvider);
-} else {
-  var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"));
-  log("warning: no web3 provider found, using infura.io as backup provider")
-}
+/* TODO: figure out why it doesn't work w metamask */
+var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"));
+// if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !== 'undefined') {
+//   var eth = new Eth(window.web3.currentProvider);
+// } else {
+//   var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"));
+//   log("warning: no web3 provider found, using infura.io as backup provider")
+// }
+
 
 const token = eth.contract(tokenABI).at(_CONTRACT_ADDRESS);
 
@@ -279,7 +282,7 @@ async function updateDifficultyGraph(eth){
     }
     printValuesToLog() {
       this.states.forEach((value) => {
-        log('block #', value[0]);
+        //log('block #', value[0]);
         log('block #', value[0], 'ts', value[2], 'diff:', _MAXIMUM_TARGET_BN.div(value[1]).toString(10));
       });
     }
@@ -414,7 +417,7 @@ async function updateDifficultyGraph(eth){
   for (var i = 0; i < 6; i++) {
     log('increasing resolution..', i+1, '/ 6');
     while (!cv.areAllValuesLoaded()) {
-      log('waiting in increaseTransitionResolution...')
+      log('waiting for values to load...');
       await sleep(300);
     }
     cv.increaseTransitionResolution();
@@ -422,7 +425,7 @@ async function updateDifficultyGraph(eth){
   }
 
   while (!cv.areAllValuesLoaded()) {
-    log('waiting for values to load 2...')
+    log('waiting for values to load...');
     await sleep(300);
   }
 
@@ -727,7 +730,6 @@ function updateStatsTable(stats){
   });
 
   updateThirdPartyAPIs();
-  updateLastUpdatedTime();
 }
 
 function updateGraphData() {
@@ -740,6 +742,7 @@ function updateGraphData() {
   el('#row-calculator').innerHTML = ''; // may not need this
   //showDifficultyGraph('');
   setTimeout(()=>{updateDifficultyGraph(eth)}, 0);
+  updateLastUpdatedTime();
 }
 
 function updateAllStats() {
@@ -747,4 +750,5 @@ function updateAllStats() {
   el('#row-difficulty').innerHTML = ''; // may not need this
   createStatsTable();
   updateStatsTable(stats);
+  updateLastUpdatedTime();
 }
