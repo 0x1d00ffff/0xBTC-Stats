@@ -591,8 +591,8 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             label: "Total Supply",
             showLine: true,
             //steppedLine: 'before',
-            backgroundColor: 'rgb(67, 160, 71)',
-            borderColor: 'rgb(67, 160, 71)',
+            backgroundColor: 'rgb(255, 167, 38)',
+            borderColor: 'rgb(255, 167, 38)',
             data: total_supply_data,
             fill: false,
             yAxisID: 'second-y-axis'
