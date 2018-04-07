@@ -8,6 +8,13 @@ Simple web site to show stats about the 0xBTC ERC-20 token
  - scale y-axes in hashrate/difficulty graph such that the values on corresponding
    axes match up. This way difficulty will visibly approach hashrate line on graph
  - move more of the static html (table header rows etc) from js into .html files
+ - colorize the miner names in the 'block distribution' table 
+ - graphs to add:
+   - total hashes over time
+   - token holders over time
+   - transactions / day
+   - stacked line graph showing different miners hashrates over time
+   - gas spent on mint()s over time
 
 #### Misc notes
 

@@ -268,6 +268,25 @@ function toReadableThousands(num_value, should_add_b_tags) {
   return num_value_string + ' ' + final_unit;
 }
 
+function toReadableThousandsLong(num_value, should_add_b_tags) {
+  units = ['', 'Thousand', 'Million', 'Billion'];
+  var final_unit = 'Trillion';
+  for(idx in units) {
+    var unit = units[idx];
+    if(num_value < 1000) {
+      final_unit = unit;
+      break;
+    } else {
+      num_value /= 1000;
+    }
+  }
+  var num_value_string = num_value.toFixed(0);
+  if(should_add_b_tags) {
+    num_value_string = '<b>' + num_value_string + '</b>';
+  }
+  return num_value_string + ' ' + final_unit;
+}
+
 function toReadableHashrate(hashrate, should_add_b_tags) {
   units = ['H/s', 'Kh/s', 'Mh/s', 'Gh/s', 'Th/s', 'Ph/s'];
   var final_unit = 'Eh/s';
@@ -504,6 +523,11 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
   //   return block.timestamp.toString(10);
   // }
 
+  /* Note: when changing color scheme we will need to modify this as well */
+  Chart.defaults.global.defaultFontColor = '#f2f2f2';
+
+
+
   /* hashrate and difficulty chart */
   var hr_diff_chart = new Chart.Scatter(document.getElementById('chart-hashrate-difficulty').getContext('2d'), {
     type: 'line',
@@ -520,11 +544,11 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             yAxisID: 'first-y-axis'
 
         },{
-            label: "Network Hashrate Estimate",
+            label: "Network Hashrate",
             showLine: true,
             //steppedLine: 'before',
-            backgroundColor: 'rgb(67, 160, 71)',
-            borderColor: 'rgb(67, 160, 71)',
+            backgroundColor: 'rgb(156, 204, 101)',
+            borderColor: 'rgb(156, 204, 101)',
             data: hashrate_data,
             fill: false,
             yAxisID: 'second-y-axis'
@@ -546,8 +570,10 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
 
             if (data.datasets[tooltipItem.datasetIndex].label == "Total Supply") {
               label +=toReadableThousands(tooltipItem.yLabel);
-            }else if (data.datasets[tooltipItem.datasetIndex].label == "Network Hashrate Estimate") {
+            }else if (data.datasets[tooltipItem.datasetIndex].label == "Network Hashrate") {
               label +=toReadableHashrate(tooltipItem.yLabel);
+            }else if (data.datasets[tooltipItem.datasetIndex].label == "Average Reward Time") {
+              label += (+tooltipItem.yLabel).toFixed(2) + ' Minutes';
             } else {
               label += Math.round(tooltipItem.yLabel * 100) / 100;
             }
@@ -558,6 +584,10 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
       },
       scales: {
         xAxes: [{
+          gridLines: {
+            color: 'rgb(97, 97, 97)',
+            zeroLineColor: 'rgb(97, 97, 97)',
+          },
           ticks: {
             // Include a dollar sign in the ticks
             callback: function(value, index, values) {
@@ -567,29 +597,46 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
           }
         }],
         yAxes: [{
-            id: 'first-y-axis',
-            type: 'linear',
-            //type: 'logarithmic',  /* hard to read */
-            scaleLabel: {
-              display: true,
-              labelString: 'Difficulty',
+          id: 'first-y-axis',
+          type: 'linear',
+          //type: 'logarithmic',  /* hard to read */
+          scaleLabel: {
+            display: true,
+            labelString: 'Difficulty',
+            fontColor: 'rgb(255, 99, 132)',
+          },
+          gridLines: {
+            color: 'rgb(97, 97, 97)',
+            zeroLineColor: 'rgb(97, 97, 97)',
+          },
+          ticks: {
+            // Include a dollar sign in the ticks
+            callback: function(value, index, values) {
+              return toReadableThousandsLong(value);
             },
+            /*stepSize: 1000,*/
+          },
         }, {
-            id: 'second-y-axis',
-            position: 'right',
-            type: 'linear',
-            //type: 'logarithmic',  /* hard to read */
-            scaleLabel: {
-              display: true,
-              labelString: 'Network Hashrate',
+          id: 'second-y-axis',
+          position: 'right',
+          type: 'linear',
+          //type: 'logarithmic',  /* hard to read */
+          scaleLabel: {
+            display: true,
+            labelString: 'Network Hashrate',
+            fontColor: 'rgb(156, 204, 101)',
+          },
+          gridLines: {
+            color: 'rgb(97, 97, 97)',
+            zeroLineColor: 'rgb(97, 97, 97)',
+          },
+          ticks: {
+            // Include a dollar sign in the ticks
+            callback: function(value, index, values) {
+              return toReadableHashrate(value);
             },
-            ticks: {
-              // Include a dollar sign in the ticks
-              callback: function(value, index, values) {
-                return toReadableHashrate(value);
-              },
-              /*stepSize: 1000,*/
-            }
+            /*stepSize: 1000,*/
+          }
         }]
       }
     },
@@ -605,8 +652,8 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             label: "Average Reward Time",
             showLine: true,
             //steppedLine: 'before',
-            backgroundColor: 'rgb(1, 87, 155)',
-            borderColor: 'rgb(1, 87, 155)',
+            backgroundColor: 'rgb(79, 195, 247)',
+            borderColor: 'rgb(79, 195, 247)',
             data: average_reward_time_data,
             fill: false,
             yAxisID: 'first-y-axis'
@@ -615,8 +662,8 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             label: "Total Supply",
             showLine: true,
             //steppedLine: 'before',
-            backgroundColor: 'rgb(255, 167, 38)',
-            borderColor: 'rgb(255, 167, 38)',
+            backgroundColor: 'rgb(255, 152, 0)',
+            borderColor: 'rgb(255, 152, 0)',
             data: total_supply_data,
             fill: false,
             yAxisID: 'second-y-axis'
@@ -638,8 +685,10 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
 
             if (data.datasets[tooltipItem.datasetIndex].label == "Total Supply") {
               label +=toReadableThousands(tooltipItem.yLabel);
-            }else if (data.datasets[tooltipItem.datasetIndex].label == "Network Hashrate Estimate") {
+            }else if (data.datasets[tooltipItem.datasetIndex].label == "Network Hashrate") {
               label +=toReadableHashrate(tooltipItem.yLabel);
+            }else if (data.datasets[tooltipItem.datasetIndex].label == "Average Reward Time") {
+              label += (+tooltipItem.yLabel).toFixed(2) + ' Minutes';
             } else {
               label += Math.round(tooltipItem.yLabel * 100) / 100;
             }
@@ -650,6 +699,10 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
       },
       scales: {
         xAxes: [{
+          gridLines: {
+            color: 'rgb(97, 97, 97)',
+            zeroLineColor: 'rgb(97, 97, 97)',
+          },
           ticks: {
             // Include a dollar sign in the ticks
             callback: function(value, index, values) {
@@ -665,6 +718,11 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             scaleLabel: {
               display: true,
               labelString: 'Average Reward Time (Minutes)',
+              fontColor: 'rgb(79, 195, 247)',
+            },
+            gridLines: {
+              color: 'rgb(97, 97, 97)',
+              zeroLineColor: 'rgb(97, 97, 97)',
             },
             ticks: {
               min: 0,
@@ -677,7 +735,12 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             //type: 'logarithmic',  /* hard to read */
             scaleLabel: {
               display: true,
-              labelString: 'Total 0xBitcoin',
+              labelString: 'Total Supply (0xBitcoin)',
+              fontColor: 'rgb(255, 152, 0)',
+            },
+            gridLines: {
+              color: 'rgb(97, 97, 97)',
+              zeroLineColor: 'rgb(97, 97, 97)',
             },
             ticks: {
               // Include a dollar sign in the ticks
@@ -772,16 +835,16 @@ async function updateDifficultyGraph(eth, num_days){
 function updateAllMinerInfo(eth, stats, hours_into_past){
 
   var known_miners = {
-    "0xf3243babf74ead828ac656877137df705868fd66" : [ "Token Mining Pool", "http://TokenMiningPool.com", "#FFCC80" ],
-    "0x53ce57325c126145de454719b4931600a0bd6fc4" : [ "0xPool",            "http://0xPool.io",           "#B388FF" ],
-    "0x98b155d9a42791ce475acc336ae348a72b2e8714" : [ "0xBTCpool",         "http://0xBTCpool.com",       "#A7FFEB" ],
-    "0x363b5534fb8b5f615583c7329c9ca8ce6edaf6e6" : [ "mike.rs pool",      "http://mike.rs:3000",        "#CCFF90" ],
-    "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : [ "PiZzA pool",        "http://gpu.PiZzA",           "#FFEE58" ],
-    "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : [ "PiZzA pool",        "http://gpu.PiZzA",           "#FFEE58" ],
-    "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : [ "PiZzA pool",        "http://gpu.PiZzA",           "#FFEE58" ],
-    "0x69ebd94944f0dba3e9416c609fbbe437b45d91ab" : [ "PiZzA pool",        "http://gpu.PiZzA",           "#FFEE58" ],
-    "0x69b85604799d16d938835852e497866a7b280323" : [ "PiZzA pool",        "http://gpu.PiZzA",           "#FFEE58" ],
-    "0x69ded73bd88a72bd9d9ddfce228eadd05601edd7" : [ "PiZzA pool",        "http://gpu.PiZzA",           "#FFEE58" ],
+    "0xf3243babf74ead828ac656877137df705868fd66" : [ "Token Mining Pool", "http://TokenMiningPool.com", "poolcolor-orange" ],
+    "0x53ce57325c126145de454719b4931600a0bd6fc4" : [ "0xPool",            "http://0xPool.io",           "poolcolor-purple" ],
+    "0x98b155d9a42791ce475acc336ae348a72b2e8714" : [ "0xBTCpool",         "http://0xBTCpool.com",       "poolcolor-blue" ],
+    "0x363b5534fb8b5f615583c7329c9ca8ce6edaf6e6" : [ "mike.rs pool",      "http://mike.rs:3000",        "poolcolor-green" ],
+    "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : [ "PiZzA pool",        "http://gpu.PiZzA",           "poolcolor-yellow" ],
+    "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : [ "PiZzA pool",        "http://gpu.PiZzA",           "poolcolor-yellow" ],
+    "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : [ "PiZzA pool",        "http://gpu.PiZzA",           "poolcolor-yellow" ],
+    "0x69ebd94944f0dba3e9416c609fbbe437b45d91ab" : [ "PiZzA pool",        "http://gpu.PiZzA",           "poolcolor-yellow" ],
+    "0x69b85604799d16d938835852e497866a7b280323" : [ "PiZzA pool",        "http://gpu.PiZzA",           "poolcolor-yellow" ],
+    "0x69ded73bd88a72bd9d9ddfce228eadd05601edd7" : [ "PiZzA pool",        "http://gpu.PiZzA",           "poolcolor-yellow" ],
   }
 
   var last_reward_eth_block = getValueFromStats('Last Eth Reward Block', stats)
@@ -946,12 +1009,14 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
         var address_url = known_miners[addr][1];
         //var hexcolor = (simpleHash(0, address_url) & 0xFFFFFF) | 0x808080;
         var hexcolor = known_miners[addr][2];
+        var poolstyle = '<span class="poolname ' + hexcolor + '">';
       } else {
         var readable_name = addr.substr(0, 20) + '...';
         var address_url = 'https://etherscan.io/address/' + addr;
         var hexcolor = (simpleHash(0, address_url) & 0xFFFFFF) | 0x808080;
         var hexcolor = '#' + hexcolor.toString(16);
         hexcolor = hexcolor.toString(16);
+        var poolstyle = '<span style="background-color: ' + hexcolor + ';" class="poolname">';
       }
 
       var transaction_url = 'https://etherscan.io/tx/' + tx_hash;
@@ -965,7 +1030,7 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
         + '<a href="' + transaction_url + '" title="' + tx_hash + '">'
         + tx_hash.substr(0, 16) + '...</a></td><td align="right" style="text-overflow:ellipsis;white-space: nowrap;overflow: hidden;">'
         + '<a href="' + address_url
-        + '"><span style="background-color: ' + hexcolor + ';" class="poolname">'
+        + '">' + poolstyle
         //+ '">'
         + readable_name
         + '</span></a></td></tr>';

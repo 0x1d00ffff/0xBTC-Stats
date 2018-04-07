@@ -48,3 +48,20 @@ a {
 a:focus, a:hover {
   color: hsl(276, 50%, 39%);
 }
+
+
+th,
+td {
+    border-bottom: 0.1rem solid rgba(97, 97, 97, 1);
+}
+
+
+span.poolname {
+  color: #F2F2F2;
+}
+
+.poolcolor-orange { background-color: #E65100 }
+.poolcolor-purple { background-color: #4527A0 }
+.poolcolor-blue   { background-color: #0277BD }
+.poolcolor-green  { background-color: #2E7D32 }
+.poolcolor-yellow { background-color: #997500 }
