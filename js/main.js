@@ -13,6 +13,7 @@ const _BLOCKS_PER_READJUSTMENT = 1024;
 const _CONTRACT_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
 const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";
 const _MAXIMUM_TARGET_BN = new Eth.BN(_MAXIMUM_TARGET_STR, 10);
+const _ZERO_BN = new Eth.BN(0, 10);
 
 /* TODO: figure out why it doesn't work w metamask */
 var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"));
@@ -25,6 +26,163 @@ var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWp
 
 
 const token = eth.contract(tokenABI).at(_CONTRACT_ADDRESS);
+
+
+/*Helper class for loading historical data from ethereum contract variables.
+  Initialize with an ethjs object, target contract address, and an integer 
+  index that points to your desired variable in in the contract's storage area
+
+  obj.addValueAtEthBlock(<block number>) starts a request to fetch
+  and cache the value of your variable at that time. Note if you pass a
+  non-integer block number it will be rounded.
+  
+  obj.areAllValuesLoaded() will return true once all fetches are complete
+
+  obj.getValues returns all requested data
+ */
+class contractValueOverTime {
+  constructor(eth, contract_address, storage_index) {
+    this.eth = eth;
+    this.contract_address = contract_address;
+    this.storage_index = storage_index;
+    this.sorted = false;
+    this.states = [];
+    /* since values are added asynchronously, we store the length we
+    expect state to be once all values are pushed */
+    this.expected_state_length = 0;
+  }
+  get getValues() {
+    return this.states;
+  }
+  printValuesToLog() {
+    this.states.forEach((value) => {
+      log('block #', value[0], 'ts', value[2], 'value[1]:', (value[1]).toString(10));
+    });
+  }
+  /* fetch query_count states between start_block_num and end_block_num */
+  addValuesInRange(start_block_num, end_block_num, query_count) {
+    var stepsize = (end_block_num-start_block_num) / query_count;
+
+    for (var count = 0; count < query_count; count += 1) {
+      this.addValueAtEthBlock(end_block_num - (stepsize*count));
+    }
+  }
+  addValueAtEthBlock(eth_block_num) {
+    /* read value from contract @ specific block num, save to this.states
+
+       detail: load eth provider with a request to load value from 
+       block @ num. Callback is anonymous function which pushes the 
+       value onto this.states */
+    this.expected_state_length += 1;
+    this.sorted = false;
+
+    /* make sure we only request integer blocks */
+    eth_block_num = Math.round(eth_block_num)
+
+    log('requested', this.storage_index, '@ block', eth_block_num)
+
+    var saveState = function(block_states, eth_block_num) {
+      return function (value) {
+        /* TODO: probably a way to convert w/o going through hex_str */
+        //log('value:', value)
+        var hex_str = value.substr(2, 64);
+        var value_bn = new Eth.BN(hex_str, 16)
+        // var difficulty = max_target.div(value_bn)
+
+        // console.log("Block #", eth_block_num, ":", value);
+        // log("Block #", eth_block_num, ":", difficulty.toString(10));
+
+        /* [block num, value @ block num, timestamp of block num] */
+        var len = block_states.push([eth_block_num, value_bn, '']);
+
+        function setValue(save_fn) {
+          return function(value) {
+            save_fn(value);
+          }
+        }
+
+        /* TODO: uncomment this to use timestamps embedded in block */
+        // eth.getBlockByNumber(eth_block_num, true).then(setValue((value)=>{block_states[len-1][2]=value.timestamp.toString(10)}))
+
+      }
+    }
+    this.eth.getStorageAt(this.contract_address, 
+                          new Eth.BN(this.storage_index, 10),
+                          eth_block_num.toString(10))
+    .then(
+      saveState(this.states, eth_block_num)
+    ).catch((error) => {
+      log('error reading block storage:', error);
+    });
+  }
+  areAllValuesLoaded() {
+    return this.expected_state_length == this.states.length;
+  }
+  async waitUntilLoaded() {
+    while (!this.areAllValuesLoaded()) {
+      //log('waiting for values to load...');
+      await sleep(80);
+    }
+  }
+  // onAllValuesLoaded(callback) {
+  //   this.on_all_values_loaded_callback = callback;
+  // }
+  sortValues() {
+    log('sorting values..');
+    this.states.sort((a, b) => {
+      //log('a', a[0], 'b', b[0]);
+      return a[0] - b[0];
+    });
+    this.sorted = true;
+  }
+  /* iterate through already loaded values. Wherever a state change is
+  seen, queue another value load from the blockchain halfway between 
+  state A and state B. Goal is to get closer to the actual eth block
+  number where the state transition occurs. */
+  increaseTransitionResolution() {
+    if(!this.sorted) {
+      this.sortValues();
+    }
+
+    var last_block_number = this.states[0][0];
+    var last_value = this.states[0][1];
+    for(var i = 0; i < this.states.length; i++) {
+      var block_number = this.states[i][0];
+      var value = this.states[i][1];
+      if(last_value.cmp(value) != 0) {
+        this.addValueAtEthBlock(((last_block_number + block_number)/2));
+      }
+      last_value = value;
+      last_block_number = block_number;
+    }
+  }
+  /* iterate through already loaded values. If 3 or more repeating
+  values are detected, remove all middle values so only the first and
+  last state with that value remain  */
+  deduplicate() {
+    if(!this.sorted) {
+      this.sortValues();
+    }
+    /* we actually go backwards so we don't screw up array indexing
+    as we remove values along the way */
+    for(var i = this.states.length-1; i >= 2 ; i--) {
+      var v1 = this.states[i][1];
+      var v2 = this.states[i-1][1];
+      var v3 = this.states[i-2][1];
+
+      if (v1.cmp(v2) == 0
+          && v2.cmp(v3) == 0) {
+        /* remove one item at location i-1 (middle value) */
+        this.states.splice(i-1, 1);
+      }
+    }
+  }
+}
+
+
+
+
+
 
 stats = [
   /*Description                     promise which retuns, or null         units         multiplier  null: filled in later*/
@@ -57,9 +215,6 @@ stats = [
 
 var latest_eth_block = null;
 eth.blockNumber().then((value)=>{
-  //log('asdhgaksjdhfgaksjdhgfakjsdhgfkasjhdfgkasjdhfgaksjdhfgaksjdhfagksjdkasjdhg');
-  //log('asdhgaksjdhfgaksjdhgfakjsgaksjdhfgaksjdhfagksjdkasjdhg');
-  //log('asdhgaksjdhfgaksjdhgfakjsdhgfkasjhdfgkasjdhfgaksjdhfgaksjdhfagksjdkasjdhg');
   latest_eth_block = parseInt(value.toString(10), 10);
 });
 function ethBlockNumberToTimestamp(eth_block) {
@@ -68,6 +223,25 @@ function ethBlockNumberToTimestamp(eth_block) {
   /* TODO: use web3 instead, its probably more accurate */
   /* blockDate = new Date(web3.eth.getBlock(startBlock-i+1).timestamp*1000); */
   return new Date(Date.now() - ((latest_eth_block - eth_block)*15*1000)).toLocaleString()
+}
+
+function toReadableThousands(num_value, should_add_b_tags) {
+  units = ['', 'K', 'M', 'B'];
+  var final_unit = 'T';
+  for(idx in units) {
+    var unit = units[idx];
+    if(num_value < 1000) {
+      final_unit = unit;
+      break;
+    } else {
+      num_value /= 1000;
+    }
+  }
+  var num_value_string = num_value.toFixed(2);
+  if(should_add_b_tags) {
+    num_value_string = '<b>' + num_value_string + '</b>';
+  }
+  return num_value_string + ' ' + final_unit;
 }
 
 function toReadableHashrate(hashrate, should_add_b_tags) {
@@ -171,20 +345,131 @@ function updateThirdPartyAPIs() {
   });
 }
 
-function showDifficultyGraph(eth, cv_obj) {
-  el('#difficultystats').innerHTML = '<canvas id="chart-difficulty" width="10rem" height="6rem"></canvas>';
-  var ctx = document.getElementById('chart-difficulty').getContext('2d');
-  var all_values = cv_obj.allValues;
-  var data = []
+function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_obj) {
+  el('#difficultystats').innerHTML = '<canvas id="chart-hashrate-difficulty" width="10rem" height="6rem"></canvas>';
+  el('#blocktimestats').innerHTML = '</canvas><canvas id="chart-rewardtime" width="10rem" height="6rem"></canvas>';
+  var target_values = target_cv_obj.getValues;
+  var era_values = era_cv_obj.getValues;
+  var tokens_minted_values = tokens_minted_cv_obj.getValues;
 
-  for (var i = 0; i < all_values.length; i++) {
-    data.push({
-      x: all_values[i][0],
-      y: _MAXIMUM_TARGET_BN.div(all_values[i][1]),
-    })
-    // labels.push(all_values[i][0]);
-    // data.push(_MAXIMUM_TARGET_BN.div(all_values[i][1]));
+  function convertValuesToChartData(values, value_mod_function) {
+    var chart_data = []
+    for (var i = 0; i < values.length; i++) {
+      /* TODO: remove this if we expect some values to be zero */
+      if(values[i][1].eq(_ZERO_BN)) {
+        continue;
+      }
+      if(value_mod_function == undefined) {
+        value_mod_function = function(v){return v};
+      }
+      chart_data.push({
+        x: values[i][0],
+        y: value_mod_function(values[i][1]),
+      })
+      //console.log('log', values[i][0], value_mod_function(values[i][1]))
+      //labels.push(values[i][0]);
+      //chart_data.push(_MAXIMUM_TARGET_BN.div(values[i][1]));
+    }
+    return chart_data;
   }
+
+  function getErasPerBlockFromEraData(era_values) {
+    var chart_data = []
+    for (var step = 1; step < era_values.length; step++) {
+
+      var eth_blocks_passed = era_values[step][0] - era_values[step-1][0];
+      var eras_passed = era_values[step][1] - era_values[step-1][1];
+
+      if (eth_blocks_passed == 0) {
+        continue;
+      }
+
+      var eras_per_eth_block = eras_passed / eth_blocks_passed;
+
+      chart_data.push({
+        x: era_values[step][0],
+        y: eras_per_eth_block,
+      })
+      //console.log('log', era_values[step][0], value_mod_function(era_values[step][1]))
+      //labels.push(era_values[step][0]);
+      //chart_data.push(_MAXIMUM_TARGET_BN.div(values[step][1]));
+    }
+    return chart_data;
+  }
+
+  function getHashrateDataFromDifficultyAndErasPerBlockData(difficulty_data, eras_per_block_data) {
+    var expected_eras_per_block = 1/60; /* should be 60 times slower than ethereum */
+    var difficulty_data_index = 0;
+    var chart_data = []
+    for (var step = 0; step < eras_per_block_data.length; step++) {
+      var current_eth_block = eras_per_block_data[step].x;
+      var current_eras_per_block = eras_per_block_data[step].y;
+
+      while(difficulty_data_index < difficulty_data.length - 1
+            && current_eth_block > difficulty_data[difficulty_data_index].x) {
+        difficulty_data_index += 1;
+      }
+      var current_difficulty = difficulty_data[difficulty_data_index].y;
+
+      var unadjusted_network_hashrate = current_difficulty * 2**22 / 600;
+
+      var network_hashrate = unadjusted_network_hashrate * (current_eras_per_block/expected_eras_per_block);
+
+      //console.log('for block', current_eth_block, 'diff', current_difficulty, 'uhr', unadjusted_network_hashrate, 'hr', network_hashrate)
+
+      chart_data.push({
+        x: current_eth_block,
+        y: network_hashrate,
+      })
+      //console.log('log', era_values[step][0], value_mod_function(era_values[step][1]))
+      //labels.push(era_values[step][0]);
+      //chart_data.push(_MAXIMUM_TARGET_BN.div(values[step][1]));
+    }
+    return chart_data;
+  }
+
+  var difficulty_data = convertValuesToChartData(target_values, 
+                                                 (x)=>{return _MAXIMUM_TARGET_BN.div(x)});
+  var era_data = convertValuesToChartData(era_values);
+  var total_supply_data = convertValuesToChartData(tokens_minted_values, 
+                                                   (x)=>{return x / 10**8});
+  var eras_per_block_data = getErasPerBlockFromEraData(era_values);
+
+  var hashrate_data = getHashrateDataFromDifficultyAndErasPerBlockData(difficulty_data, eras_per_block_data);
+
+  var average_reward_time_data = [];
+  for(var i = 0; i < eras_per_block_data.length; i += 1) {
+    //console.log('calc avg reward time', eras_per_block_data[i].x, 1 / (eras_per_block_data[i].y * 4))
+    average_reward_time_data.push({
+      x: eras_per_block_data[i].x,
+      /* 1 / (eras per block * 4 eth blocks per minute) */
+      y: 1 / (eras_per_block_data[i].y * 4),
+    })
+  }
+  // var difficulty_data = []
+  // for (var i = 0; i < target_values.length; i++) {
+  //   if(target_values[i][1].eq(_ZERO_BN)) {
+  //     continue;
+  //   }
+  //   difficulty_data.push({
+  //     x: target_values[i][0],
+  //     y: _MAXIMUM_TARGET_BN.div(target_values[i][1]),
+  //   })
+  //   // labels.push(target_values[i][0]);
+  //   // difficulty_data.push(_MAXIMUM_TARGET_BN.div(target_values[i][1]));
+  // }
+  // var era_data = []
+  // for (var i = 0; i < era_values.length; i++) {
+  //   if(era_values[i][1].eq(_ZERO_BN)) {
+  //     continue;
+  //   }
+  //   difficulty_data.push({
+  //     x: era_values[i][0],
+  //     y: _MAXIMUM_TARGET_BN.div(era_values[i][1]),
+  //   })
+  //   // labels.push(era_values[i][0]);
+  //   // difficulty_data.push(_MAXIMUM_TARGET_BN.div(era_values[i][1]));
+  // }
 
   //log('textt', eth.getBlockByNumber(5000000, true).timestamp.toString());
 
@@ -195,43 +480,54 @@ function showDifficultyGraph(eth, cv_obj) {
   //   return block.timestamp.toString(10);
   // }
 
-  var chart = new Chart.Scatter(ctx, {
-    // The type of chart we want to create
+  /* hashrate and difficulty chart */
+  var hr_diff_chart = new Chart.Scatter(document.getElementById('chart-hashrate-difficulty').getContext('2d'), {
     type: 'line',
 
-    // The data for our dataset
     data: {
-        //labels: labels,
         datasets: [{
             label: "Difficulty",
             showLine: true,
             steppedLine: 'before',
             backgroundColor: 'rgb(255, 99, 132)',
             borderColor: 'rgb(255, 99, 132)',
-            data: data,
+            data: difficulty_data,
             fill: false,
+            yAxisID: 'first-y-axis'
+
+        },{
+            label: "Network Hashrate Estimate",
+            showLine: true,
+            //steppedLine: 'before',
+            backgroundColor: 'rgb(67, 160, 71)',
+            borderColor: 'rgb(67, 160, 71)',
+            data: hashrate_data,
+            fill: false,
+            yAxisID: 'second-y-axis'
+
         }]
     },
 
-    // Configuration options go here
     options: {
       tooltips: {
         callbacks: {
           label: function(tooltipItem, data) {
             var label = ''
 
-            /* add series label */
-            // label += data.datasets[tooltipItem.datasetIndex].label || '';
-            // if (label) {
-            //   label += ': ';
-            // }
+            /* Note: might have issues here if you dont set dataset label */
+            label += data.datasets[tooltipItem.datasetIndex].label
             
-            label += "Eth block #" + tooltipItem.xLabel;
-            
-            label += ' ('
-            label += ethBlockNumberToTimestamp(tooltipItem.xLabel);
-            label += ') : '
-            label += Math.round(tooltipItem.yLabel * 100) / 100;
+            label += " @ Eth block #" + tooltipItem.xLabel;
+            label += ' (' + ethBlockNumberToTimestamp(tooltipItem.xLabel) + ') :  ';
+
+            if (data.datasets[tooltipItem.datasetIndex].label == "Total Supply") {
+              label +=toReadableThousands(tooltipItem.yLabel);
+            }else if (data.datasets[tooltipItem.datasetIndex].label == "Network Hashrate Estimate") {
+              label +=toReadableHashrate(tooltipItem.yLabel);
+            } else {
+              label += Math.round(tooltipItem.yLabel * 100) / 100;
+            }
+            //console.log(tooltipItem, data)
             return label;
           }
         }
@@ -242,152 +538,163 @@ function showDifficultyGraph(eth, cv_obj) {
             // Include a dollar sign in the ticks
             callback: function(value, index, values) {
               return ethBlockNumberToTimestamp(value);
-              //return 'x' + value;
-              //return '$' + value;
             },
             stepSize: 1000,
           }
+        }],
+        yAxes: [{
+            id: 'first-y-axis',
+            type: 'linear',
+            //type: 'logarithmic',  /* hard to read */
+            scaleLabel: {
+              display: true,
+              labelString: 'Difficulty',
+            },
+        }, {
+            id: 'second-y-axis',
+            position: 'right',
+            type: 'linear',
+            //type: 'logarithmic',  /* hard to read */
+            scaleLabel: {
+              display: true,
+              labelString: 'Network Hashrate',
+            },
+            ticks: {
+              // Include a dollar sign in the ticks
+              callback: function(value, index, values) {
+                return toReadableHashrate(value);
+              },
+              /*stepSize: 1000,*/
+            }
+        }]
+      }
+    },
+    });
+
+
+  /* block time chart */
+  var rewardtime_chart = new Chart.Scatter(document.getElementById('chart-rewardtime').getContext('2d'), {
+    type: 'line',
+
+    data: {
+        datasets: [{
+            label: "Average Reward Time",
+            showLine: true,
+            //steppedLine: 'before',
+            backgroundColor: 'rgb(1, 87, 155)',
+            borderColor: 'rgb(1, 87, 155)',
+            data: average_reward_time_data,
+            fill: false,
+            yAxisID: 'first-y-axis'
+
+        },{
+            label: "Total Supply",
+            showLine: true,
+            //steppedLine: 'before',
+            backgroundColor: 'rgb(67, 160, 71)',
+            borderColor: 'rgb(67, 160, 71)',
+            data: total_supply_data,
+            fill: false,
+            yAxisID: 'second-y-axis'
+
+        }]
+    },
+
+    options: {
+      tooltips: {
+        callbacks: {
+          label: function(tooltipItem, data) {
+            var label = ''
+
+            /* Note: might have issues here if you dont set dataset label */
+            label += data.datasets[tooltipItem.datasetIndex].label
+            
+            label += " @ Eth block #" + tooltipItem.xLabel;
+            label += ' (' + ethBlockNumberToTimestamp(tooltipItem.xLabel) + ') :  ';
+
+            if (data.datasets[tooltipItem.datasetIndex].label == "Total Supply") {
+              label +=toReadableThousands(tooltipItem.yLabel);
+            }else if (data.datasets[tooltipItem.datasetIndex].label == "Network Hashrate Estimate") {
+              label +=toReadableHashrate(tooltipItem.yLabel);
+            } else {
+              label += Math.round(tooltipItem.yLabel * 100) / 100;
+            }
+            //console.log(tooltipItem, data)
+            return label;
+          }
+        }
+      },
+      scales: {
+        xAxes: [{
+          ticks: {
+            // Include a dollar sign in the ticks
+            callback: function(value, index, values) {
+              return ethBlockNumberToTimestamp(value);
+            },
+            stepSize: 1000,
+          }
+        }],
+        yAxes: [{
+            id: 'first-y-axis',
+            type: 'linear',
+            //type: 'logarithmic',  /* hard to read */
+            scaleLabel: {
+              display: true,
+              labelString: 'Average Reward Time (Minutes)',
+            },
+            ticks: {
+              min: 0,
+              max: 20,
+            },
+        }, {
+            id: 'second-y-axis',
+            position: 'right',
+            type: 'linear',
+            //type: 'logarithmic',  /* hard to read */
+            scaleLabel: {
+              display: true,
+              labelString: 'Total 0xBitcoin',
+            },
+            ticks: {
+              // Include a dollar sign in the ticks
+              callback: function(value, index, values) {
+                return toReadableThousands(value);
+              },
+              /*stepSize: 1000,*/
+            }
         }]
       }
     },
     });
 }
 
-async function updateDifficultyGraph(eth){
+async function refine_mining_target_values(mining_target_values){
+  for (var i = 0; i < 6; i++) {
+    log('increasing resolution..', i+1, '/ 6');
+    await mining_target_values.waitUntilLoaded();
+    mining_target_values.increaseTransitionResolution();
+    el('#difficultystats').innerHTML = 'Loading info from the blockchain... ' + (100*(i+1)/6).toFixed(0) + '%';
+  }
+
+  await mining_target_values.waitUntilLoaded();
+
+  log('deduplicating..');
+  mining_target_values.deduplicate();
+}
+
+
+async function updateDifficultyGraph(eth, num_days){
   /*
   note: this is implementation of diff. in contract:
       function getMiningDifficulty() public constant returns (uint) 
         return _MAXIMUM_TARGET.div(miningTarget);
   */
   var contract_address = '0xB6eD7644C69416d67B522e20bC294A9a9B405B31';
-  var max_blocks = 21*24*60*(60/15); /* 21 days */
-  var initial_search_points = 21; /* in some crazy world where readjustments happen every day, this will catch all changes */
+  var max_blocks = num_days*24*60*(60/15);
+  var initial_search_points = 200; /* in some crazy world where readjustments happen every day, this will catch all changes */
   var previous = 0;
   //var current_eth_block = getValueFromStats('Last Eth Block', stats);
   var current_eth_block = parseInt((await eth.blockNumber()).toString(10), 10);
-
-  class contractValueOverTime {
-    constructor(eth, contract_address, storage_index) {
-      this.eth = eth;
-      this.contract_address = contract_address;
-      this.storage_index = storage_index;
-      this.sorted = false;
-      this.states = [];
-      /* since values are added asynchronously, we store the length we
-      expect state to be once all values are pushed */
-      this.expected_state_length = 0;
-    }
-    get allValues() {
-      return this.states;
-    }
-    printValuesToLog() {
-      this.states.forEach((value) => {
-        //log('block #', value[0]);
-        log('block #', value[0], 'ts', value[2], 'diff:', _MAXIMUM_TARGET_BN.div(value[1]).toString(10));
-      });
-    }
-    addValueAtEthBlock(eth_block_num) {
-      /* read value from contract @ specific block num, save to this.states
-
-         detail: load eth provider with a request to load value from 
-         block @ num. Callback is anonymous function which pushes the 
-         value onto this.states */
-      this.expected_state_length += 1;
-      this.sorted = false;
-
-      log('requested val @ block', eth_block_num)
-
-      var saveState = function(block_states, eth_block_num) {
-        return function (value) {
-          /* TODO: probably a way to convert w/o going through hex_str */
-          //log('value:', value)
-          var hex_str = value.substr(2, 64);
-          var value_bn = new Eth.BN(hex_str, 16)
-          // var difficulty = max_target.div(value_bn)
-
-          // console.log("Block #", eth_block_num, ":", value);
-          // log("Block #", eth_block_num, ":", difficulty.toString(10));
-
-          /* [block num, value @ block num, timestamp of block num] */
-          var len = block_states.push([eth_block_num, value_bn, '']);
-
-          function setValue(save_fn) {
-            return function(value) {
-              save_fn(value);
-            }
-          }
-
-          /* TODO: uncomment this to use timestamps embedded in block */
-          // eth.getBlockByNumber(eth_block_num, true).then(setValue((value)=>{block_states[len-1][2]=value.timestamp.toString(10)}))
-
-        }
-      }
-      this.eth.getStorageAt(this.contract_address, 
-                            new Eth.BN(this.storage_index, 10),
-                            eth_block_num.toString(10))
-      .then(
-        saveState(this.states, eth_block_num)
-      ).catch((error) => {
-        log('error reading block storage:', error);
-      });
-    }
-    areAllValuesLoaded() {
-      return this.expected_state_length == this.states.length;
-    }
-    // onAllValuesLoaded(callback) {
-    //   this.on_all_values_loaded_callback = callback;
-    // }
-    sortValues() {
-      log('sorting values..');
-      this.states.sort((a, b) => {
-        //log('a', a[0], 'b', b[0]);
-        return a[0] - b[0];
-      });
-      this.sorted = true;
-    }
-    /* iterate through already loaded values. Wherever a state change is
-    seen, queue another value load from the blockchain halfway between 
-    state A and state B. Goal is to get closer to the actual eth block
-    number where the state transition occurs. */
-    increaseTransitionResolution() {
-      if(!this.sorted) {
-        this.sortValues();
-      }
-
-      var last_block_number = this.states[0][0];
-      var last_value = this.states[0][1];
-      for(var i = 0; i < this.states.length; i++) {
-        var block_number = this.states[i][0];
-        var value = this.states[i][1];
-        if(last_value.cmp(value) != 0) {
-          this.addValueAtEthBlock(((last_block_number + block_number)/2));
-        }
-        last_value = value;
-        last_block_number = block_number;
-      }
-    }
-    /* iterate through already loaded values. If 3 or more repeating
-    values are detected, remove all middle values so only the first and
-    last state with that value remain  */
-    deduplicate() {
-      if(!this.sorted) {
-        this.sortValues();
-      }
-      /* we actually go backwards so we don't screw up array indexing
-      as we remove values along the way */
-      for(var i = this.states.length-1; i > 2 ; i--) {
-        var v1 = this.states[i][1];
-        var v2 = this.states[i-1][1];
-        var v3 = this.states[i-2][1];
-
-        if (v1.cmp(v2) == 0
-            && v2.cmp(v3) == 0) {
-          /* remove one item at location i-1 (middle value) */
-          this.states.splice(i-1, 1);
-        }
-      }
-    }
-  }
 
   var block_states = [];
 
@@ -395,47 +702,41 @@ async function updateDifficultyGraph(eth){
   // var b = await eth.getStorageAt('0xB6eD7644C69416d67B522e20bC294A9a9B405B31', new Eth.BN('20', 10), 'earliest');
   // console.log(a, b);
 
-  var cv = new contractValueOverTime(eth, contract_address, '11');
+  // 'reward era' is at location 7
+  var era_values = new contractValueOverTime(eth, contract_address, '7');
+  era_values.addValuesInRange((current_eth_block-max_blocks), current_eth_block, initial_search_points);
 
-  for (var target_block = current_eth_block;
-       target_block > current_eth_block-max_blocks;
-       target_block = target_block - (max_blocks / initial_search_points)) {
-      // console.log("check #" + (target_block));
+  // 'tokens minted' is at location 20
+  var tokens_minted_values = new contractValueOverTime(eth, contract_address, '20');
+  tokens_minted_values.addValuesInRange((current_eth_block-max_blocks), current_eth_block, initial_search_points);
 
-    cv.addValueAtEthBlock(target_block);
-  }
+  // 'mining target' is at location 11
+  var mining_target_values = new contractValueOverTime(eth, contract_address, '11');
+  mining_target_values.addValuesInRange((current_eth_block-max_blocks), current_eth_block, initial_search_points);
+  await refine_mining_target_values(mining_target_values);
 
-  // while (!cv.areAllValuesLoaded()) {
-  //   log('waiting for values to load 1...')
-  //   await sleep(300);
-  // }
 
-  //cv.sortValues();
 
-  cv.printValuesToLog();
-
-  for (var i = 0; i < 6; i++) {
-    log('increasing resolution..', i+1, '/ 6');
-    while (!cv.areAllValuesLoaded()) {
-      log('waiting for values to load...');
-      await sleep(300);
+  // print all diff values to console TODO: remove
+  mining_target_values.getValues.forEach((value) => {
+    if(value[1] != undefined && !value[1].eq(_ZERO_BN)) {
+      log('block #', value[0], 'ts', value[2], 'diff:', _MAXIMUM_TARGET_BN.div(value[1]).toString(10));
+    }else{
+      log('block #', value[0], 'ts', value[2], 'value[1]:', (value[1]).toString(10));
     }
-    cv.increaseTransitionResolution();
-    el('#difficultystats').innerHTML = 'Loading info from the blockchain... ' + (100*(i+1)/6).toFixed(0) + '%';
-  }
+  });
 
-  while (!cv.areAllValuesLoaded()) {
-    log('waiting for values to load...');
-    await sleep(300);
-  }
+  /* Note: we sort these down here because we need to wait until values are
+     loaded before sorting. technically we should explicitly wait, but these
+     should finish long before refining the mining targets */
+  era_values.sortValues();
+  tokens_minted_values.sortValues();
+  era_values.printValuesToLog();
 
-  log('deduplicating..');
-  cv.deduplicate();
+  showDifficultyGraph(eth, mining_target_values, era_values, tokens_minted_values);
 
-  cv.printValuesToLog();
-
-  showDifficultyGraph(eth, cv);
 }
+
 
 /* TODO use hours_into_past */
 function updateAllMinerInfo(eth, stats, hours_into_past){
@@ -464,6 +765,7 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
 
   /* get all mint() transactions in the last N blocks */
   /* more info: https://github.com/ethjs/ethjs/blob/master/docs/user-guide.md#ethgetlogs */
+  /* and https://ethereum.stackexchange.com/questions/12950/what-are-event-topics/12951#12951 */
   eth.getLogs({
     fromBlock: last_reward_eth_block - num_eth_blocks_to_search,
     toBlock: last_reward_eth_block,
@@ -741,13 +1043,14 @@ function updateGraphData() {
   el('#row-blocks').innerHTML = ''; // may not need this
   el('#row-calculator').innerHTML = ''; // may not need this
   //showDifficultyGraph('');
-  setTimeout(()=>{updateDifficultyGraph(eth)}, 0);
+  setTimeout(()=>{updateDifficultyGraph(eth, 60)}, 0); /* 60 days */
   updateLastUpdatedTime();
 }
 
 function updateAllStats() {
   el('#statistics').innerHTML = ''; // may not need this
   el('#row-difficulty').innerHTML = ''; // may not need this
+  el('#row-reward-time').innerHTML = ''; // may not need this
   createStatsTable();
   updateStatsTable(stats);
   updateLastUpdatedTime();
