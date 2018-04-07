@@ -241,6 +241,13 @@ var latest_eth_block = null;
 eth.blockNumber().then((value)=>{
   latest_eth_block = parseInt(value.toString(10), 10);
 });
+function ethBlockNumberToDateStr(eth_block) {
+  //log('converting', eth_block)
+  //log('latest e', latest_eth_block)
+  /* TODO: use web3 instead, its probably more accurate */
+  /* blockDate = new Date(web3.eth.get bBlock(startBlock-i+1).timestamp*1000); */
+  return new Date(Date.now() - ((latest_eth_block - eth_block)*15*1000)).toLocaleDateString()
+}
 function ethBlockNumberToTimestamp(eth_block) {
   //log('converting', eth_block)
   //log('latest e', latest_eth_block)
@@ -591,9 +598,9 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
           ticks: {
             // Include a dollar sign in the ticks
             callback: function(value, index, values) {
-              return ethBlockNumberToTimestamp(value);
+              return ethBlockNumberToDateStr(value);
             },
-            stepSize: 1000,
+            stepSize: 6*((24*60*60)/15),  // 6 days
           }
         }],
         yAxes: [{
@@ -614,7 +621,8 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             callback: function(value, index, values) {
               return toReadableThousandsLong(value);
             },
-            /*stepSize: 1000,*/
+            //maxTicksLimit: 6,
+            autoSkip: true,
           },
         }, {
           id: 'second-y-axis',
@@ -629,12 +637,15 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
           gridLines: {
             color: 'rgb(97, 97, 97)',
             zeroLineColor: 'rgb(97, 97, 97)',
+            drawOnChartArea: false, // only want the grid lines for one axis to show up
           },
           ticks: {
             // Include a dollar sign in the ticks
             callback: function(value, index, values) {
               return toReadableHashrate(value);
             },
+            //maxTicksLimit: 6,
+            autoSkip: true,
             /*stepSize: 1000,*/
           }
         }]
@@ -706,9 +717,9 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
           ticks: {
             // Include a dollar sign in the ticks
             callback: function(value, index, values) {
-              return ethBlockNumberToTimestamp(value);
+              return ethBlockNumberToDateStr(value);
             },
-            stepSize: 1000,
+            stepSize: 6*((24*60*60)/15),  // 6 days
           }
         }],
         yAxes: [{
@@ -741,6 +752,7 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             gridLines: {
               color: 'rgb(97, 97, 97)',
               zeroLineColor: 'rgb(97, 97, 97)',
+              drawOnChartArea: false, // only want the grid lines for one axis to show up
             },
             ticks: {
               // Include a dollar sign in the ticks
@@ -784,7 +796,7 @@ async function updateDifficultyGraph(eth, num_days){
   */
   var contract_address = '0xB6eD7644C69416d67B522e20bC294A9a9B405B31';
   var max_blocks = num_days*24*60*(60/15);
-  var initial_search_points = 100; /* in some crazy world where readjustments happen every day, this will catch all changes */
+  var initial_search_points = num_days; /* in some crazy world where readjustments happen every day, this will catch all changes */
   var previous = 0;
   //var current_eth_block = getValueFromStats('Last Eth Block', stats);
   var current_eth_block = parseInt((await eth.blockNumber()).toString(10), 10);
