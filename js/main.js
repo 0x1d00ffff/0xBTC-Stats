@@ -1,12 +1,15 @@
 
 function addToURL(value){
-    if (history.pushState) {
-        var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + value;
-        window.history.pushState({path:newurl},'',newurl);
-    }
- }
+  if (history.pushState) {
+    var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + value;
+    window.history.pushState({path:newurl},'',newurl);
+  }
+}
 
-log('0xBitcoin Stats v0.0.4');
+const version = "v0.0.5";
+
+log('0xBitcoin Stats', version);
+  el('#footerversion').innerHTML = version;
 
 var stats_updated_count = 0;
 const _BLOCKS_PER_READJUSTMENT = 1024;
