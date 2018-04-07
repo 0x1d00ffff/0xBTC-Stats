@@ -34,8 +34,9 @@ function goToURLAnchor() {
   /* kind of a hack, after charts are loaded move to correct anchor. For some
      reason the viewport is forced to the top when creating the charts */
   if (window.location.hash.search('#difficulty') != -1) {
-    var targetOffset = $('#row-difficulty').offset().top;
-    $('html, body').animate({scrollTop: targetOffset}, 1000);
+    // this one isn't really necessary because diffigulty graph is at top of screen
+    //var targetOffset = $('#row-difficulty').offset().top;
+    //$('html, body').animate({scrollTop: targetOffset}, 1000);
   } else if (window.location.hash.search('#reward-time') != -1) {
     var targetOffset = $('#row-reward-time').offset().top;
     $('html, body').animate({scrollTop: targetOffset}, 1000);
@@ -396,8 +397,8 @@ function updateThirdPartyAPIs() {
 }
 
 function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_obj) {
-  el('#difficultystats').innerHTML = '<canvas id="chart-hashrate-difficulty" width="10rem" height="6rem"></canvas>';
-  el('#blocktimestats').innerHTML = '</canvas><canvas id="chart-rewardtime" width="10rem" height="6rem"></canvas>';
+  el('#difficultystats').innerHTML = '<canvas id="chart-hashrate-difficulty" width="4rem" height="2rem"></canvas>';
+  el('#blocktimestats').innerHTML =  '<canvas id="chart-rewardtime" width="4rem" height="2rem"></canvas>';
   var target_values = target_cv_obj.getValues;
   var era_values = era_cv_obj.getValues;
   var tokens_minted_values = tokens_minted_cv_obj.getValues;
@@ -600,7 +601,7 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             callback: function(value, index, values) {
               return ethBlockNumberToDateStr(value);
             },
-            stepSize: 6*((24*60*60)/15),  // 6 days
+            //stepSize: 6*((24*60*60)/15),  // 6 days
           }
         }],
         yAxes: [{
@@ -719,7 +720,7 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             callback: function(value, index, values) {
               return ethBlockNumberToDateStr(value);
             },
-            stepSize: 6*((24*60*60)/15),  // 6 days
+            //stepSize: 6*((24*60*60)/15),  // 6 days
           }
         }],
         yAxes: [{
@@ -738,6 +739,10 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             ticks: {
               min: 0,
               max: 20,
+              callback: function(value, index, values) {
+                //return value.toFixed(0) + " Minutes";  // correct but looks redundant
+                return value.toFixed(0);
+              },
             },
         }, {
             id: 'second-y-axis',
