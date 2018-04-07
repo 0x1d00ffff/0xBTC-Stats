@@ -48,16 +48,15 @@ Attributions:
       </div>
       <div class="row">
         <div class="column">
-          <!--<a href="#miners">miners</a>  |  blocks  |  block rate  |  difficulty  |  hashrate-->
           <ul id="navigation" class="nav">
             <li class="nav"><a href="./?page=stats#">stats</a></li>
             <li class="nav"><a href="./?page=stats#miners">miners</a></li>
             <li class="nav"><a href="./?page=stats#blocks">blocks</a></li>
-            <!-- <li class="nav"><a href="#blockrate">block rate</a></li> -->
-            <!-- <li class="nav"><a href="#difficulty">difficulty</a></li> -->
-            <!-- <li class="nav"><a href="#hashrate">hashrate</a></li> -->
             <li class="nav"><a href="./?page=stats#miningcalculator">mining calculator</a></li>
-            <li class="nav"><a href="./?page=graphs#difficulty">difficulty</a></li>
+            <li class="nav"><a href="./?page=graphs#difficulty">difficulty / hashrate</a></li>
+            <!--<li class="nav"><a href="./?page=graphs#difficulty">hashrate</a></li>-->
+            <li class="nav"><a href="./?page=graphs#reward-time">reward time / supply</a></li>
+            <!--<li class="nav"><a href="./?page=graphs#reward-time">supply</a></li>-->
           </ul>
         </div>
       </div>
@@ -115,7 +114,7 @@ Attributions:
         </div>
       </div>
     
-      <div id="row-calculator">
+      <div id="row-miningcalculator">
         <div class="row">
           <div class="column"><h4 class="add-top-padding"><a name="miningcalculator"></a>Mining calculator</h4></div>
         </div>
@@ -127,7 +126,7 @@ Attributions:
             <p>
               <em>tokens per day = 4,320,000  x  hashrate  /  (difficulty  x  2<sup>22</sup>)</em>
               <br>
-              Note: this does <strong>not</strong> factor pool fees. Subtract 15% from the final amount.
+              Note: this does <span style="font-weight:600;">not</span> factor pool fees. Subtract 15% from the final amount.
             </p>
             <p>
               Above is based on the hashrate equation:
@@ -145,7 +144,7 @@ Attributions:
         </div>
         <div class="row">
           <div class="column">
-            Note: Experimental. If graph is stuck at 100%, refresh the page. Timestamps are estimated (should be within 10%). 
+            Note: Experimental. Timestamps are estimated (should be within 10%). 
             <br>
             <br>
           </div>
@@ -161,7 +160,7 @@ Attributions:
 
       <div id="row-reward-time">
         <div class="row">
-          <div class="column"><h4 class="add-top-padding"><a name="difficulty"></a>Average Reward Time and Supply over the last 60 days</h4></div>
+          <div class="column"><h4 class="add-top-padding"><a name="reward-time"></a>Average Reward Time and Supply over the last 60 days</h4></div>
         </div>
         <div class="row">
           <div class="column">

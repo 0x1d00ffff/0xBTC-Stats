@@ -27,6 +27,27 @@ var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWp
 
 const token = eth.contract(tokenABI).at(_CONTRACT_ADDRESS);
 
+function goToURLAnchor() {
+  /* kind of a hack, after charts are loaded move to correct anchor. For some
+     reason the viewport is forced to the top when creating the charts */
+  if (window.location.hash.search('#difficulty') != -1) {
+    var targetOffset = $('#row-difficulty').offset().top;
+    $('html, body').animate({scrollTop: targetOffset}, 1000);
+  } else if (window.location.hash.search('#reward-time') != -1) {
+    var targetOffset = $('#row-reward-time').offset().top;
+    $('html, body').animate({scrollTop: targetOffset}, 1000);
+  }else if (window.location.hash.search('#miners') != -1) {
+    var targetOffset = $('#row-miners').offset().top;
+    $('html, body').animate({scrollTop: targetOffset}, 1000);
+  }else if (window.location.hash.search('#blocks') != -1) {
+    var targetOffset = $('#row-blocks').offset().top;
+    $('html, body').animate({scrollTop: targetOffset}, 1000);
+  }else if (window.location.hash.search('#miningcalculator') != -1) {
+    var targetOffset = $('#row-miningcalculator').offset().top;
+    $('html, body').animate({scrollTop: targetOffset}, 1000);
+  }
+}
+
 
 /*Helper class for loading historical data from ethereum contract variables.
   Initialize with an ethjs object, target contract address, and an integer 
@@ -415,7 +436,7 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
 
       var network_hashrate = unadjusted_network_hashrate * (current_eras_per_block/expected_eras_per_block);
 
-      //console.log('for block', current_eth_block, 'diff', current_difficulty, 'uhr', unadjusted_network_hashrate, 'hr', network_hashrate)
+      console.log('for block', current_eth_block, 'diff', current_difficulty.toString(), 'uhr', unadjusted_network_hashrate, 'hr', network_hashrate)
 
       chart_data.push({
         x: current_eth_block,
@@ -666,6 +687,11 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
       }
     },
     });
+
+  //console.log('search', window.location.)
+
+  goToURLAnchor();
+  
 }
 
 async function refine_mining_target_values(mining_target_values){
@@ -673,7 +699,8 @@ async function refine_mining_target_values(mining_target_values){
     log('increasing resolution..', i+1, '/ 6');
     await mining_target_values.waitUntilLoaded();
     mining_target_values.increaseTransitionResolution();
-    el('#difficultystats').innerHTML = 'Loading info from the blockchain... ' + (100*(i+1)/6).toFixed(0) + '%';
+    /* veen though there are only 6 steps, divide by 7 so the last % shown isn't 100% (kindof misleading) */
+    el('#difficultystats').innerHTML = '<div class="">Loading info from the blockchain... <span style="font-weight:600;">' + (100*(i+1)/7).toFixed(0) + '%</span></div>';
   }
 
   await mining_target_values.waitUntilLoaded();
@@ -691,7 +718,7 @@ async function updateDifficultyGraph(eth, num_days){
   */
   var contract_address = '0xB6eD7644C69416d67B522e20bC294A9a9B405B31';
   var max_blocks = num_days*24*60*(60/15);
-  var initial_search_points = 200; /* in some crazy world where readjustments happen every day, this will catch all changes */
+  var initial_search_points = 100; /* in some crazy world where readjustments happen every day, this will catch all changes */
   var previous = 0;
   //var current_eth_block = getValueFromStats('Last Eth Block', stats);
   var current_eth_block = parseInt((await eth.blockNumber()).toString(10), 10);
@@ -944,10 +971,12 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
     el('#blockstats').innerHTML = innerhtml_buffer;
     log('done populating block stats');
 
+    goToURLAnchor();
   })
   .catch((error) => {
     log('error filtering txs:', error);
   });
+
 
 }
 
@@ -1041,7 +1070,7 @@ function updateGraphData() {
   el('#row-statistics').innerHTML = ''; // may not need this
   el('#row-miners').innerHTML = ''; // may not need this
   el('#row-blocks').innerHTML = ''; // may not need this
-  el('#row-calculator').innerHTML = ''; // may not need this
+  el('#row-miningcalculator').innerHTML = ''; // may not need this
   //showDifficultyGraph('');
   setTimeout(()=>{updateDifficultyGraph(eth, 60)}, 0); /* 60 days */
   updateLastUpdatedTime();
