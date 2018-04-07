@@ -257,6 +257,25 @@ function ethBlockNumberToTimestamp(eth_block) {
   return new Date(Date.now() - ((latest_eth_block - eth_block)*15*1000)).toLocaleString()
 }
 
+
+
+function secondsToReadableTime(seconds) {
+  if(seconds <= 0) {
+    return "0 seconds";
+  }
+
+  units = ['days', 'hours', 'minutes', 'seconds'];
+  divisors = [24*60*60, 60*60, 60, 1]
+  for(idx in units) {
+    var unit = units[idx];
+    var divisor = divisors[idx];
+    if(seconds > divisor) {
+      return (seconds / divisor).toFixed(1) + ' ' + unit;
+    }
+  }
+  return seconds.toFixed(1) + ' ' + 'seconds';
+}
+
 function toReadableThousands(num_value, should_add_b_tags) {
   units = ['', 'K', 'M', 'B'];
   var final_unit = 'T';
@@ -366,6 +385,8 @@ function updateStatsThatHaveDependencies(stats) {
   seconds_per_reward = seconds_since_readjustment / rewards_since_readjustment;
   minutes_per_reward = (seconds_per_reward / 60).toFixed(2)
   el('#CurrentAverageRewardTime').innerHTML = "<b>" + minutes_per_reward + "</b> minutes";
+  /* add a time estimate to RewardsUntilReadjustment */
+  el('#RewardsUntilReadjustment').innerHTML = el('#RewardsUntilReadjustment').innerHTML + " (~" + secondsToReadableTime(rewards_left*minutes_per_reward*60) + ")";
 
   /* estimated hashrate */
   difficulty = getValueFromStats('Mining Difficulty', stats)

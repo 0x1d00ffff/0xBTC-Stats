@@ -10,7 +10,10 @@ Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d0
    axes match up. This way difficulty will visibly approach hashrate line on graph
  - move more of the static html (table header rows etc) from js into .html files
  - colorize the miner names in the 'block distribution' table 
+ - add human-readable dates next to the eth block numbers in stats
+ - add a set of useful links to the footer of the site
  - graphs to add:
+   - pie chart to 'block distribution' section
    - total hashes over time
    - token holders over time
    - token transfers / day
