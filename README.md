@@ -7,6 +7,7 @@ Simple web site to show stats about the 0xBTC ERC-20 token
  - use to find difficulty iterate through blocks using lastRewardEthBlockNumber
  - scale y-axes in hashrate/difficulty graph such that the values on corresponding
    axes match up. This way difficulty will visibly approach hashrate line on graph
+ - move more of the static html (table header rows etc) from js into .html files
 
 #### Misc notes
 
