@@ -56,11 +56,11 @@ li.nav {
 
 /*
 div {
-border: 1px solid black;
-
+  border: 1px solid white;
 }
 */
 
+/* deprecated, would be nice to use */
 .poolcolor-orange { color: #FF6C04 }
 .poolcolor-purple { color: #671CFF }
 .poolcolor-blue   { color: #A7FFEB }

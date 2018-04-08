@@ -6,7 +6,7 @@ function addToURL(value){
   }
 }
 
-const version = "v0.0.5";
+const version = "v0.0.6";
 
 log('0xBitcoin Stats', version);
   el('#footerversion').innerHTML = version;
@@ -17,6 +17,15 @@ const _CONTRACT_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
 const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";
 const _MAXIMUM_TARGET_BN = new Eth.BN(_MAXIMUM_TARGET_STR, 10);
 const _ZERO_BN = new Eth.BN(0, 10);
+
+/* colors used by pool names. todo: move to css, still use them for chart.js */
+var pool_colors = {
+  orange : "#C64500",
+  purple : "#4527A0",
+  blue   : "#0277BD",
+  green  : "#2E7D32",
+  yellow : "#997500",
+}
 
 /* TODO: figure out why it doesn't work w metamask */
 var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"));
@@ -415,6 +424,112 @@ function updateThirdPartyAPIs() {
     function(data) {
       el('#TotalContractOperations').innerHTML = "<b>" + data["countTxs"] + "</b> txs";
   });
+}
+
+function showBlockDistributionPieChart(piechart_dataset, piechart_labels) {
+  console.log('dataset', piechart_dataset);
+  el('#blockdistributionpiechart').innerHTML = '<canvas id="chart-block-distribution" width="2rem" height="2rem"></canvas>';
+
+  if(piechart_dataset.length == 0 || piechart_labels.length == 0) {
+    return;
+  }
+
+  //Chart.defaults.global.elements.arc.backgroundColor = 'rgba(255,0,0,1)';
+  Chart.defaults.global.elements.arc.borderColor = 'rgb(32, 34, 38)';
+  Chart.defaults.global.elements.arc.borderWidth = 6;
+
+  /* hashrate and difficulty chart */
+  var hr_diff_chart = new Chart(document.getElementById('chart-block-distribution').getContext('2d'), {
+    type: 'doughnut',
+
+    data: {
+        datasets: [piechart_dataset],
+        labels: piechart_labels,
+    },
+
+    options: {
+      cutoutPercentage: 50,
+      legend: {
+        display: false,
+      },
+      tooltips: {
+        /*callbacks: {
+          label: function(tooltipItem, data) {
+            console.log(tooltipItem, data)
+            var label = data.labels[tooltipItem.datasetIndex]
+
+            
+            label += " @" + tooltipItem.xLabel;
+
+              label += tooltipItem.yLabel.toString();
+            //console.log(tooltipItem, data)
+            return label;
+          }
+        }*/
+      },
+      // scales: {
+      //   xAxes: [{
+      //     gridLines: {
+      //       color: 'rgb(97, 97, 97)',
+      //       zeroLineColor: 'rgb(97, 97, 97)',
+      //     },
+      //     ticks: {
+      //       // Include a dollar sign in the ticks
+      //       callback: function(value, index, values) {
+      //         return ethBlockNumberToDateStr(value);
+      //       },
+      //       //stepSize: 6*((24*60*60)/15),  // 6 days
+      //     }
+      //   }],
+      //   yAxes: [{
+      //     id: 'first-y-axis',
+      //     type: 'linear',
+      //     //type: 'logarithmic',  /* hard to read */
+      //     scaleLabel: {
+      //       display: true,
+      //       labelString: 'Difficulty',
+      //       fontColor: 'rgb(255, 99, 132)',
+      //     },
+      //     gridLines: {
+      //       color: 'rgb(97, 97, 97)',
+      //       zeroLineColor: 'rgb(97, 97, 97)',
+      //     },
+      //     ticks: {
+      //       // Include a dollar sign in the ticks
+      //       callback: function(value, index, values) {
+      //         return toReadableThousandsLong(value);
+      //       },
+      //       //maxTicksLimit: 6,
+      //       autoSkip: true,
+      //     },
+      //   }, {
+      //     id: 'second-y-axis',
+      //     position: 'right',
+      //     type: 'linear',
+      //     //type: 'logarithmic',  /* hard to read */
+      //     scaleLabel: {
+      //       display: true,
+      //       labelString: 'Network Hashrate',
+      //       fontColor: 'rgb(156, 204, 101)',
+      //     },
+      //     gridLines: {
+      //       color: 'rgb(97, 97, 97)',
+      //       zeroLineColor: 'rgb(97, 97, 97)',
+      //       drawOnChartArea: false, // only want the grid lines for one axis to show up
+      //     },
+      //     ticks: {
+      //       // Include a dollar sign in the ticks
+      //       callback: function(value, index, values) {
+      //         return toReadableHashrate(value);
+      //       },
+      //       //maxTicksLimit: 6,
+      //       autoSkip: true,
+      //       /*stepSize: 1000,*/
+      //     }
+      //   }]
+      // }
+    },
+    });
 }
 
 function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_obj) {
@@ -868,21 +983,64 @@ async function updateDifficultyGraph(eth, num_days){
 
 }
 
+function getMinerColor(address, known_miners) {
+  function simpleHash(seed, string) {
+    var h = seed;
+    for (var i = 0; i < string.length; i++) {
+      h = ((h << 5) - h) + string[i].codePointAt();
+      h &= 0xFFFFFFFF;
+    }
+    return h;
+  }
+
+  if(known_miners[address] !== undefined) {
+    var hexcolor = known_miners[address][2];
+  } else {
+    var address_url = 'https://etherscan.io/address/' + address;
+    var hexcolor = (simpleHash(0, address_url) & 0xFFFFFF) | 0x808080;
+    hexcolor = '#' + hexcolor.toString(16);
+    
+  }
+  return hexcolor;
+}
+
+function getMinerName(address, known_miners) {
+  if(known_miners[address] !== undefined) {
+    return known_miners[address][0];
+  } else {
+    return address.substr(0, 20) + '...';
+  }
+}
+
+function getMinerNameLinkHTML(address, known_miners) {
+  var hexcolor = getMinerColor(address, known_miners);
+  var poolstyle = '<span style="background-color: ' + hexcolor + ';" class="poolname">';
+
+  if(known_miners[address] !== undefined) {
+    var readable_name = known_miners[address][0];
+    var address_url = known_miners[address][1];
+  } else {
+    var readable_name = address.substr(0, 20) + '...';
+    var address_url = 'https://etherscan.io/address/' + address;
+  }
+
+  return '<a href="' + address_url + '">' + poolstyle + readable_name + '</span></a>';
+}
 
 /* TODO use hours_into_past */
 function updateAllMinerInfo(eth, stats, hours_into_past){
 
   var known_miners = {
-    "0xf3243babf74ead828ac656877137df705868fd66" : [ "Token Mining Pool", "http://TokenMiningPool.com", "poolcolor-orange" ],
-    "0x53ce57325c126145de454719b4931600a0bd6fc4" : [ "0xPool",            "http://0xPool.io",           "poolcolor-purple" ],
-    "0x98b155d9a42791ce475acc336ae348a72b2e8714" : [ "0xBTCpool",         "http://0xBTCpool.com",       "poolcolor-blue" ],
-    "0x363b5534fb8b5f615583c7329c9ca8ce6edaf6e6" : [ "mike.rs pool",      "http://mike.rs:3000",        "poolcolor-green" ],
-    "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : [ "PiZzA pool",        "http://gpu.PiZzA",           "poolcolor-yellow" ],
-    "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : [ "PiZzA pool",        "http://gpu.PiZzA",           "poolcolor-yellow" ],
-    "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : [ "PiZzA pool",        "http://gpu.PiZzA",           "poolcolor-yellow" ],
-    "0x69ebd94944f0dba3e9416c609fbbe437b45d91ab" : [ "PiZzA pool",        "http://gpu.PiZzA",           "poolcolor-yellow" ],
-    "0x69b85604799d16d938835852e497866a7b280323" : [ "PiZzA pool",        "http://gpu.PiZzA",           "poolcolor-yellow" ],
-    "0x69ded73bd88a72bd9d9ddfce228eadd05601edd7" : [ "PiZzA pool",        "http://gpu.PiZzA",           "poolcolor-yellow" ],
+    "0xf3243babf74ead828ac656877137df705868fd66" : [ "Token Mining Pool", "http://TokenMiningPool.com", pool_colors.orange ],
+    "0x53ce57325c126145de454719b4931600a0bd6fc4" : [ "0xPool",            "http://0xPool.io",           pool_colors.purple ],
+    "0x98b155d9a42791ce475acc336ae348a72b2e8714" : [ "0xBTCpool",         "http://0xBTCpool.com",       pool_colors.blue ],
+    "0x363b5534fb8b5f615583c7329c9ca8ce6edaf6e6" : [ "mike.rs pool",      "http://mike.rs:3000",        pool_colors.green ],
+    "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : [ "PiZzA pool",        "http://gpu.PiZzA",           pool_colors.yellow ],
+    "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : [ "PiZzA pool",        "http://gpu.PiZzA",           pool_colors.yellow ],
+    "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : [ "PiZzA pool",        "http://gpu.PiZzA",           pool_colors.yellow ],
+    "0x69ebd94944f0dba3e9416c609fbbe437b45d91ab" : [ "PiZzA pool",        "http://gpu.PiZzA",           pool_colors.yellow ],
+    "0x69b85604799d16d938835852e497866a7b280323" : [ "PiZzA pool",        "http://gpu.PiZzA",           pool_colors.yellow ],
+    "0x69ded73bd88a72bd9d9ddfce228eadd05601edd7" : [ "PiZzA pool",        "http://gpu.PiZzA",           pool_colors.yellow ],
   }
 
   var last_reward_eth_block = getValueFromStats('Last Eth Reward Block', stats)
@@ -981,26 +1139,26 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
     log('done sorting miner info');
 
     /* fill in miner info */
+    var piechart_labels = [];
+    var piechart_dataset = {
+      data: [],
+      backgroundColor: [],
+      label: 'miner-data'
+    };
     var innerhtml_buffer = '<tr><th>Miner</th><th>Block Count</th>'
       + '<th>% of Total</th><th>Hashrate (Estimate)</th></tr>';
     sorted_miner_block_count.forEach(function(miner_info) {
       var addr = miner_info[0];
       var blocks = miner_info[1];
-
-      if(known_miners[addr] !== undefined) {
-        var readable_name = known_miners[addr][0];
-        var address_url = known_miners[addr][1];
-      } else {
-        var readable_name = addr;
-        var address_url = 'https://etherscan.io/address/' + addr
-      }
-
+      var miner_name_link = getMinerNameLinkHTML(addr, known_miners);
       var percent_of_total_blocks = blocks/total_block_count;
 
+      piechart_dataset.data.push(Math.round(10000*percent_of_total_blocks)/100);
+      piechart_dataset.backgroundColor.push(getMinerColor(addr, known_miners))
+      piechart_labels.push(getMinerName(addr, known_miners))
 
       innerhtml_buffer += '<tr><td>'
-        + '<a href="' + address_url + '">'
-        + readable_name + '</a></td><td>'
+        + miner_name_link + '</td><td>'
         + blocks + '</td><td>'
         + (100*percent_of_total_blocks).toFixed(2) + '%' + '</td><td>'
         + toReadableHashrate(percent_of_total_blocks*estimated_network_hashrate, false) + '</td></tr>';
@@ -1013,6 +1171,8 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
     log('done populating miner stats');
     // $(window).hide().show(0);
     // $(window).trigger('resize');
+
+    showBlockDistributionPieChart(piechart_dataset, piechart_labels);
 
     var blocks_since_last_reward = current_eth_block - last_reward_eth_block;
     var date_now = new Date();
@@ -1033,29 +1193,7 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
       var tx_hash = block_info[1];
       var addr = block_info[2];
 
-      function simpleHash(seed, string) {
-        var h = seed;
-        for (var i = 0; i < string.length; i++) {
-          h = ((h << 5) - h) + string[i].codePointAt();
-          h &= 0xFFFFFFFF;
-        }
-        return h;
-      }
-
-      if(known_miners[addr] !== undefined) {
-        var readable_name = known_miners[addr][0];
-        var address_url = known_miners[addr][1];
-        //var hexcolor = (simpleHash(0, address_url) & 0xFFFFFF) | 0x808080;
-        var hexcolor = known_miners[addr][2];
-        var poolstyle = '<span class="poolname ' + hexcolor + '">';
-      } else {
-        var readable_name = addr.substr(0, 20) + '...';
-        var address_url = 'https://etherscan.io/address/' + addr;
-        var hexcolor = (simpleHash(0, address_url) & 0xFFFFFF) | 0x808080;
-        var hexcolor = '#' + hexcolor.toString(16);
-        hexcolor = hexcolor.toString(16);
-        var poolstyle = '<span style="background-color: ' + hexcolor + ';" class="poolname">';
-      }
+      var miner_name_link = getMinerNameLinkHTML(addr, known_miners);
 
       var transaction_url = 'https://etherscan.io/tx/' + tx_hash;
       var block_url = 'https://etherscan.io/block/' + eth_block;
@@ -1067,11 +1205,7 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
         + '<a href="' + block_url + '">' + eth_block + '</td><td>'
         + '<a href="' + transaction_url + '" title="' + tx_hash + '">'
         + tx_hash.substr(0, 16) + '...</a></td><td align="right" style="text-overflow:ellipsis;white-space: nowrap;overflow: hidden;">'
-        + '<a href="' + address_url
-        + '">' + poolstyle
-        //+ '">'
-        + readable_name
-        + '</span></a></td></tr>';
+        + miner_name_link + '</td></tr>';
         //+ '</a></td></tr>';
     });
     el('#blockstats').innerHTML = innerhtml_buffer;

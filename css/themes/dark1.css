@@ -60,6 +60,7 @@ span.poolname {
   color: #F2F2F2;
 }
 
+/* deprecated, would be nice to use */
 .poolcolor-orange { background-color: #C64500 }
 .poolcolor-purple { background-color: #4527A0 }
 .poolcolor-blue   { background-color: #0277BD }
