@@ -5,6 +5,7 @@ Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d0
 #### TODO
 
  - use lastDifficultyPeriodStarted to find/iterate over difficulty changes 
+ - modify hexcolor algo to pick a random hue, leaving saturation/value constant
  - add selectors to change graph window size and resolution
  - scale y-axes in hashrate/difficulty graph such that the values on corresponding
    axes match up. This way difficulty will visibly approach hashrate line on graph
