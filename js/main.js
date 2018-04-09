@@ -6,7 +6,7 @@ function addToURL(value){
   }
 }
 
-const version = "v0.0.6";
+const version = "v0.0.7";
 
 log('0xBitcoin Stats', version);
   el('#footerversion').innerHTML = version;
@@ -210,6 +210,24 @@ class contractValueOverTime {
           && v2.cmp(v3) == 0) {
         /* remove one item at location i-1 (middle value) */
         this.states.splice(i-1, 1);
+      }
+    }
+  }
+  /* iterate through already loaded values. If 2 or more repeating values are
+     detected, remove all but the first block where that value is seen. */
+  removeExtraValuesForStepChart() {
+    if(!this.sorted) {
+      this.sortValues();
+    }
+    /* we actually go backwards so we don't screw up array indexing
+    as we remove values along the way */
+    for(var i = this.states.length-1; i >= 1 ; i--) {
+      var v1 = this.states[i][1];
+      var v2 = this.states[i-1][1];
+
+      if (v1.cmp(v2) == 0) {
+        /* remove one item at location i (first value) */
+        this.states.splice(i, 1);
       }
     }
   }
@@ -651,6 +669,7 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
   function getHashrateDataFromDifficultyAndErasPerBlockData(difficulty_data, eras_per_block_data) {
     var expected_eras_per_block = 1/60; /* should be 60 times slower than ethereum */
     var difficulty_data_index = 0;
+    var difficulty_change_block_num = 0;
     var chart_data = []
     for (var step = 0; step < eras_per_block_data.length; step++) {
       var current_eth_block = eras_per_block_data[step].x;
@@ -658,15 +677,51 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
 
       while(difficulty_data_index < difficulty_data.length - 1
             && current_eth_block > difficulty_data[difficulty_data_index].x) {
+        difficulty_change_block_num = difficulty_data[difficulty_data_index].x;
         difficulty_data_index += 1;
       }
-      var current_difficulty = difficulty_data[difficulty_data_index].y;
 
-      var unadjusted_network_hashrate = current_difficulty * 2**22 / 600;
+      var difficulty = difficulty_data[difficulty_data_index].y.toNumber();
+
+      /* if difficulty change occurs within this step window */
+      if (step != 0
+          && difficulty_data_index != 0
+          && eras_per_block_data[step].x > difficulty_change_block_num
+          && eras_per_block_data[step-1].x < difficulty_change_block_num) {
+
+        /* make a new half-way difficulty that takes the duration of each 
+           seperate difficulty into accout  */
+
+        var step_size_in_eth_blocks = eras_per_block_data[step].x - eras_per_block_data[step-1].x;
+        var diff1_duration = eras_per_block_data[step].x - difficulty_change_block_num;
+        var diff2_duration = difficulty_change_block_num - eras_per_block_data[step-1].x;
+
+        var current_difficulty = difficulty_data[difficulty_data_index].y.toNumber();
+        /* NOTE: since the data is stored kind-of oddly (two values per
+           difficulty: both the first and last known block at that value), we
+           index difficulty_data as step-1 instead of step-2, skipping a
+           value. */
+        var last_difficulty = difficulty_data[difficulty_data_index-1].y.toNumber();
+
+        //console.log('step size', step_size_in_eth_blocks);
+        //console.log('dif', difficulty);
+        //console.log('d curr', eras_per_block_data[step].x, diff1_duration, current_difficulty);
+        //console.log('d  old', eras_per_block_data[step-1].x, diff2_duration, last_difficulty);
+
+        difficulty = (current_difficulty * (diff1_duration/step_size_in_eth_blocks))
+                     + (last_difficulty * (diff2_duration/step_size_in_eth_blocks));
+        //console.log('d', difficulty);
+
+
+      }
+
+
+
+      var unadjusted_network_hashrate = difficulty * 2**22 / 600;
 
       var network_hashrate = unadjusted_network_hashrate * (current_eras_per_block/expected_eras_per_block);
 
-      console.log('for block', current_eth_block, 'diff', current_difficulty.toString(), 'uhr', unadjusted_network_hashrate, 'hr', network_hashrate)
+      console.log('for block', current_eth_block, 'diff', difficulty.toString(), 'uhr', unadjusted_network_hashrate, 'hr', network_hashrate)
 
       chart_data.push({
         x: current_eth_block,
@@ -1025,6 +1080,7 @@ async function refine_mining_target_values(mining_target_values){
 
   log('deduplicating..');
   mining_target_values.deduplicate();
+  mining_target_values.removeExtraValuesForStepChart();
 }
 
 
