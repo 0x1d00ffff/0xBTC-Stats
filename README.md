@@ -1,6 +1,16 @@
 # 0xBTC
 Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d00ffff.github.io/0xBTC-Stats/))
 
+#### BUGS
+
+ - When loading graphs, occasionally the last epoch value loaded is 0, which
+   causes hashrate to be a very large negative number. 
+
+    4.77s  block # 5404660 ts  value[1]: 37579
+    4.77s  block # 5410420 ts  value[1]: 0
+    ...
+    for block 5404660 diff 20212668 uhr 141296790405.12 hr 387094332047.3599
+    for block 5410420 diff 20212668 uhr 141296790405.12 hr -55310334235770.875
 
 #### TODO
 
@@ -13,6 +23,11 @@ Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d0
  - ~~colorize the miner names in the 'block distribution' table~~
  - add human-readable dates next to the eth block numbers in stats
  - add a set of useful links to the footer of the site
+ - ~~improve hashrate graph accuracy: currently, we load a set of time 'windows' 
+   and calcualte hashrate for each window, using the difficulty value set at the
+   *end* of the window. A better technique: if window is over blocks 1-300 and
+   diffuculty changes at block 100, 1/3 are at low diff and 2/3 at high diff.~~~
+   Verify that this is fixed
  - graphs to add:
    - ~~pie chart to 'block distribution' section~~
    - total hashes over time
@@ -57,33 +72,33 @@ how to figure out what values are located where:
 
     # figure out what indexes contract variables lie (prints first 15 indexes)
     function hex2a(hexx) {
-	    var hex = hexx.toString();//force conversion
-	    var str = '';
-	    for (var i = 0; i < hex.length; i += 2)
-	        str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-	    return str;
-	}
+        var hex = hexx.toString();//force conversion
+        var str = '';
+        for (var i = 0; i < hex.length; i += 2)
+            str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+        return str;
+    }
     for (var i=0; i<15; i++){
-    	var hex_str = (await eth.getStorageAt('0xB6eD7644C69416d67B522e20bC294A9a9B405B31', i, 5280486)).toString();
-    	hex_str = hex_str.substr(2, 64);
+        var hex_str = (await eth.getStorageAt('0xB6eD7644C69416d67B522e20bC294A9a9B405B31', i, 5280486)).toString();
+        hex_str = hex_str.substr(2, 64);
         
         console.log(i, hex_str);
         console.log('    u256(int):', new Eth.BN(hex_str, 16).toString(10));
         console.log('    u128[0](int):', new Eth.BN(hex_str.substr(0,32), 16).toString(10));
         console.log('    u128[1](int):', new Eth.BN(hex_str.substr(32,64), 16).toString(10));
         try { 
-        	console.log('    u256(str):', hex2a(hex_str));
-        	} catch(err) {
-        		console.log('    u256(str): bad');
-        	}
+            console.log('    u256(str):', hex2a(hex_str));
+            } catch(err) {
+                console.log('    u256(str): bad');
+            }
         try { 
-        	console.log('    u128[0](str):', hex2a(hex_str.substr(0,32)));
-        	} catch(err) {
-        		console.log('    u128[0](str): bad');
-        	}
+            console.log('    u128[0](str):', hex2a(hex_str.substr(0,32)));
+            } catch(err) {
+                console.log('    u128[0](str): bad');
+            }
         try { 
-        	console.log('    u128[1](str):', hex2a(hex_str.substr(32,64)));
-        	} catch(err) {
-        		console.log('    u128[1](str): bad');
-        	}
+            console.log('    u128[1](str):', hex2a(hex_str.substr(32,64)));
+            } catch(err) {
+                console.log('    u128[1](str): bad');
+            }
     }
