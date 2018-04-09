@@ -440,6 +440,9 @@ function updateStatsThatHaveDependencies(stats) {
   current_eth_block = getValueFromStats('Last Eth Block', stats)
   difficulty_start_eth_block = getValueFromStats('Last Difficulty Start Block', stats)
 
+  /* Add timestamp to 'Last difficulty start block' stat */
+  el('#LastDifficultyStartBlock  ').innerHTML += "<span style='font-size:0.8em;'>(" + ethBlockNumberToTimestamp(difficulty_start_eth_block) + ")</span>";
+
   /* time calculated using 15-second eth blocks */
   var eth_blocks_since_last_difficulty_period = current_eth_block - difficulty_start_eth_block;
   var seconds_since_readjustment = eth_blocks_since_last_difficulty_period * 15
