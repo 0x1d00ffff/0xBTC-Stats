@@ -1252,7 +1252,7 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
       var miner_name_link = getMinerNameLinkHTML(addr, known_miners);
       var percent_of_total_blocks = blocks/total_block_count;
 
-      piechart_dataset.data.push(Math.round(10000*percent_of_total_blocks)/100);
+      piechart_dataset.data.push(blocks);
       piechart_dataset.backgroundColor.push(getMinerColor(addr, known_miners))
       piechart_labels.push(getMinerName(addr, known_miners))
 
