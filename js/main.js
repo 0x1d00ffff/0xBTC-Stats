@@ -685,7 +685,7 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             borderColor: 'rgb(255, 99, 132)',
             data: difficulty_data,
             fill: false,
-            yAxisID: 'first-y-axis'
+            yAxisID: 'first-y-axis',
 
         },{
             label: "Network Hashrate",
@@ -695,7 +695,8 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             borderColor: 'rgb(156, 204, 101)',
             data: hashrate_data,
             fill: false,
-            yAxisID: 'second-y-axis'
+            yAxisID: 'second-y-axis',
+            //fill: 'origin',
 
         }]
     },
@@ -733,7 +734,6 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             zeroLineColor: 'rgb(97, 97, 97)',
           },
           ticks: {
-            // Include a dollar sign in the ticks
             callback: function(value, index, values) {
               return ethBlockNumberToDateStr(value);
             },
@@ -791,6 +791,19 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
     });
 
 
+  /* make another dataset with only first and last points in the array */
+  var datasetCopy = [
+    average_reward_time_data.slice(0, 1)[0], 
+    average_reward_time_data.slice(average_reward_time_data.length-1, average_reward_time_data.length)[0],
+  ]
+  /* make a copy of each array element so we don't modify 'real' data later */
+  datasetCopy[0] = Object.assign({}, datasetCopy[0]);
+  datasetCopy[1] = Object.assign({}, datasetCopy[1]);
+  /* set y-values to 10-minutes */
+  datasetCopy[0].y = 10;
+  datasetCopy[1].y = 10;
+  console.log('datasetCopy', datasetCopy);
+
   /* block time chart */
   var rewardtime_chart = new Chart.Scatter(document.getElementById('chart-rewardtime').getContext('2d'), {
     type: 'line',
@@ -806,6 +819,16 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
             fill: false,
             yAxisID: 'first-y-axis'
 
+        }, {
+          label: 'Target Reward Time',
+          showLine: true,
+          fill: false,
+          backgroundColor: 'rgb(79, 195, 247)',
+          borderColor: 'rgb(79, 195, 247)',
+          borderDash: [5, 15],
+          pointRadius: 0,
+          data: datasetCopy,
+          yAxisID: 'first-y-axis',
         },{
             label: "Total Supply",
             showLine: true,
@@ -820,6 +843,18 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
     },
 
     options: {
+      legend: {
+        //display: false,
+        labels: {
+          /* hide value(s) from the legend */
+          filter: function(legendItem, data) {
+            if (legendItem.text == "Target Reward Time") {
+              return null;
+            }
+            return legendItem;
+          },
+        },
+      },
       tooltips: {
         callbacks: {
           label: function(tooltipItem, data) {
@@ -997,7 +1032,7 @@ function getMinerColor(address, known_miners) {
     var hexcolor = known_miners[address][2];
   } else {
     var address_url = 'https://etherscan.io/address/' + address;
-    var hexcolor = (simpleHash(0, address_url) & 0xFFFFFF) | 0x808080;
+    var hexcolor = (simpleHash(0, address_url) & 0xFFFFFF) | 0x000000;
     hexcolor = '#' + hexcolor.toString(16);
     
   }
