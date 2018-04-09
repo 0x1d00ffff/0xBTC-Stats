@@ -14,8 +14,10 @@ log('0xBitcoin Stats', version);
 var stats_updated_count = 0;
 const _BLOCKS_PER_READJUSTMENT = 1024;
 const _CONTRACT_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
-const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";
+const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";  // 2**234
 const _MAXIMUM_TARGET_BN = new Eth.BN(_MAXIMUM_TARGET_STR, 10);
+const _MINIMUM_TARGET = 2**16;
+const _MINIMUM_TARGET_BN = new Eth.BN(_MINIMUM_TARGET);
 const _ZERO_BN = new Eth.BN(0, 10);
 
 /* colors used by pool names. todo: move to css, still use them for chart.js */
@@ -214,8 +216,54 @@ class contractValueOverTime {
 }
 
 
+function calculateNewMiningDifficulty(current_difficulty, 
+                                      eth_blocks_since_last_difficulty_period,
+                                      epochs_mined) {
+  var current_mining_target = _MAXIMUM_TARGET_BN.div(new Eth.BN(current_difficulty));
+  var eth_blocks_since_last_difficulty_period = new Eth.BN(eth_blocks_since_last_difficulty_period);
+  var epochs_mined = new Eth.BN(epochs_mined);
 
+  var target_eth_blocks_since_last_difficulty_period = epochs_mined.mul(new Eth.BN(60));
+  if(eth_blocks_since_last_difficulty_period.lt(target_eth_blocks_since_last_difficulty_period)) {
+    //console.log('harder');
+    var excess_block_pct = (target_eth_blocks_since_last_difficulty_period.mul(new Eth.BN(100))).div( eth_blocks_since_last_difficulty_period );
+    var excess_block_pct_extra = excess_block_pct.sub(new Eth.BN(100));
+    if (excess_block_pct_extra.gt(new Eth.BN(1000))) {
+      excess_block_pct_extra = new Eth.BN(1000); 
+    }
+    // If there were 5% more blocks mined than expected then this is 5.  If there were 100% more blocks mined than expected then this is 100.
+    //make it harder
+    var new_mining_target = current_mining_target.sub(current_mining_target.div(new Eth.BN(2000)).mul(excess_block_pct_extra));   //by up to 50 %
+  }else{
+    //console.log('easier');
+    var shortage_block_pct = (eth_blocks_since_last_difficulty_period.mul(new Eth.BN(100))).div( target_eth_blocks_since_last_difficulty_period );
+    var shortage_block_pct_extra = shortage_block_pct.sub(new Eth.BN(100));
+    if (shortage_block_pct_extra.gt(new Eth.BN(1000))) {
+      shortage_block_pct_extra = new Eth.BN(1000); //always between 0 and 1000
+    }
+    //make it easier
+    var new_mining_target = current_mining_target.add(current_mining_target.div(new Eth.BN(2000)).mul(shortage_block_pct_extra));   //by up to 50 %
+  }
 
+  // console.log('cur mining target', current_mining_target.toString(10));
+  // console.log('new mining target', new_mining_target.toString(10));
+  // console.log('min mining target', _MINIMUM_TARGET_BN.toString(10));
+
+  /* never gunna happen, probably. */
+  if(new_mining_target.lt(_MINIMUM_TARGET_BN)) //very difficult
+  {
+    //console.log('hit minimum');
+    new_mining_target = _MINIMUM_TARGET_BN;
+  }
+  if(new_mining_target.gt(_MAXIMUM_TARGET_BN)) //very easy
+  {
+    //console.log('hit maximum');
+    new_mining_target = _MAXIMUM_TARGET_BN;
+  }
+
+  /* return difficulty as an integer */
+  return parseInt(_MAXIMUM_TARGET_BN.div(new_mining_target).toString(10));
+}
 
 
 stats = [
@@ -235,6 +283,7 @@ stats = [
   ['Current Mining Reward',         token.getMiningReward,                "0xBTC",      0.00000001, null     ], /* mining */
   ['Epoch Count',                   token.epochCount,                     "",           1,          null     ], /* mining */
   ['Total Supply',                  token.totalSupply,                    "0xBTC",      0.00000001, null     ], /* supply */
+  //['Mining Target',                 token.miningTarget,                   "",           1,          null     ], /* mining */
   ['',                              null,                                 "",           1,          null     ], /* */
   ['Token Holders',                 null,                                 "holders",    1,          null     ], /* usage */
   ['Token Transfers',               null,                                 "transfers",  1,          null     ], /* usage */
@@ -273,8 +322,8 @@ function secondsToReadableTime(seconds) {
     return "0 seconds";
   }
 
-  units = ['days', 'hours', 'minutes', 'seconds'];
-  divisors = [24*60*60, 60*60, 60, 1]
+  units = ['years', 'months', 'days', 'hours', 'minutes', 'seconds'];
+  divisors = [365.25*24*60*60, 30.4*24*60*60, 24*60*60, 60*60, 60, 1]
   for(idx in units) {
     var unit = units[idx];
     var divisor = divisors[idx];
@@ -366,9 +415,9 @@ function sleep(ms) {
 function updateStatsThatHaveDependencies(stats) {
   /* estimated hashrate */
   difficulty = getValueFromStats('Mining Difficulty', stats)
-  hashrate = difficulty * 2**22 / 600
-  hashrate /= 1000000000
-  el('#EstimatedHashrate').innerHTML = "<b>" + hashrate.toFixed(2) + "</b> Gh/s";
+  //hashrate = difficulty * 2**22 / 600
+  //hashrate /= 1000000000
+  //el('#EstimatedHashrate').innerHTML = "<b>" + hashrate.toFixed(2) + "</b> Gh/s";
 
   /* supply remaining in era */
   max_supply_for_era = getValueFromStats('Max Supply for Current Era', stats)
@@ -376,7 +425,10 @@ function updateStatsThatHaveDependencies(stats) {
   current_reward = getValueFromStats('Current Mining Reward', stats)
   supply_remaining_in_era = max_supply_for_era - current_supply; /* TODO: probably need to round to current mining reward */
   rewards_blocks_remaining_in_era = supply_remaining_in_era / current_reward;
-  el('#SupplyRemaininginEra').innerHTML = "<b>" + supply_remaining_in_era.toLocaleString() + "</b> 0xBTC <span>(" + rewards_blocks_remaining_in_era + " blocks)</span>";
+  el('#SupplyRemaininginEra').innerHTML = "<b>" + supply_remaining_in_era.toLocaleString() + "</b> 0xBTC <span style='font-size:0.8em;'>(" + rewards_blocks_remaining_in_era + " blocks)</span>";
+
+  /* time until next epoch ('halvening') */
+  el('#CurrentRewardEra').innerHTML += " <span style='font-size:0.8em;'>(next era: ~" + secondsToReadableTime(rewards_blocks_remaining_in_era * 600) + ")</div>";
 
   /* rewards until next readjustment */
   epoch_count = getValueFromStats('Epoch Count', stats)
@@ -389,16 +441,25 @@ function updateStatsThatHaveDependencies(stats) {
   difficulty_start_eth_block = getValueFromStats('Last Difficulty Start Block', stats)
 
   /* time calculated using 15-second eth blocks */
-  seconds_since_readjustment = (current_eth_block - difficulty_start_eth_block) * 15
+  var eth_blocks_since_last_difficulty_period = current_eth_block - difficulty_start_eth_block;
+  var seconds_since_readjustment = eth_blocks_since_last_difficulty_period * 15
 
   seconds_per_reward = seconds_since_readjustment / rewards_since_readjustment;
   minutes_per_reward = (seconds_per_reward / 60).toFixed(2)
   el('#CurrentAverageRewardTime').innerHTML = "<b>" + minutes_per_reward + "</b> minutes";
   /* add a time estimate to RewardsUntilReadjustment */
-  el('#RewardsUntilReadjustment').innerHTML = el('#RewardsUntilReadjustment').innerHTML + " (~" + secondsToReadableTime(rewards_left*minutes_per_reward*60) + ")";
+  el('#RewardsUntilReadjustment').innerHTML = el('#RewardsUntilReadjustment').innerHTML + "  <span style='font-size:0.8em;'>(~" + secondsToReadableTime(rewards_left*minutes_per_reward*60) + ")</span>";
+
+  /* calculate next difficulty */
+  //var current_mining_target = getValueFromStats('Mining Target', stats);
+  var new_mining_target = calculateNewMiningDifficulty(difficulty,
+                                                       eth_blocks_since_last_difficulty_period,
+                                                       rewards_since_readjustment);
+  console.log('new mining target:', new_mining_target);
+  el('#MiningDifficulty').innerHTML += "  <span style='font-size:0.8em;'>(next: ~" + new_mining_target.toLocaleString() + ")</span>";
 
   /* estimated hashrate */
-  difficulty = getValueFromStats('Mining Difficulty', stats)
+  //difficulty = getValueFromStats('Mining Difficulty', stats)
   hashrate = difficulty * 2**22 / 600
   /* use current reward rate in hashrate calculation */
   hashrate *= (10 / minutes_per_reward)
@@ -802,7 +863,7 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
   /* set y-values to 10-minutes */
   datasetCopy[0].y = 10;
   datasetCopy[1].y = 10;
-  console.log('datasetCopy', datasetCopy);
+  //console.log('datasetCopy', datasetCopy);
 
   /* block time chart */
   var rewardtime_chart = new Chart.Scatter(document.getElementById('chart-rewardtime').getContext('2d'), {
