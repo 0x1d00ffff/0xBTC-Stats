@@ -215,13 +215,21 @@ class contractValueOverTime {
   }
   /* iterate through already loaded values. If 2 or more repeating values are
      detected, remove all but the first block where that value is seen. */
-  removeExtraValuesForStepChart() {
+  removeExtraValuesForStepChart(allow_last_value) {
+    if(allow_last_value == undefined) {
+      allow_last_value = true;
+    }
+    if(allow_last_value) {
+      var start_index = this.states.length-2;
+    } else {
+      var start_index = this.states.length-1;
+    }
     if(!this.sorted) {
       this.sortValues();
     }
     /* we actually go backwards so we don't screw up array indexing
     as we remove values along the way */
-    for(var i = this.states.length-1; i >= 1 ; i--) {
+    for(var i = start_index; i >= 1 ; i--) {
       var v1 = this.states[i][1];
       var v2 = this.states[i-1][1];
 
@@ -676,10 +684,12 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
       var current_eras_per_block = eras_per_block_data[step].y;
 
       while(difficulty_data_index < difficulty_data.length - 1
-            && current_eth_block > difficulty_data[difficulty_data_index].x) {
-        difficulty_change_block_num = difficulty_data[difficulty_data_index].x;
+            && difficulty_data[difficulty_data_index+1].x < current_eth_block) {
+        difficulty_change_block_num = difficulty_data[difficulty_data_index+1].x;
         difficulty_data_index += 1;
       }
+
+      //console.log('diff chg @', difficulty_change_block_num);
 
       var difficulty = difficulty_data[difficulty_data_index].y.toNumber();
 
@@ -703,10 +713,10 @@ function showDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_cv_ob
            value. */
         var last_difficulty = difficulty_data[difficulty_data_index-1].y.toNumber();
 
-        //console.log('step size', step_size_in_eth_blocks);
-        //console.log('dif', difficulty);
-        //console.log('d curr', eras_per_block_data[step].x, diff1_duration, current_difficulty);
-        //console.log('d  old', eras_per_block_data[step-1].x, diff2_duration, last_difficulty);
+        // console.log('step size', step_size_in_eth_blocks);
+        // console.log('dif', difficulty);
+        // console.log('d curr', eras_per_block_data[step].x, diff1_duration, current_difficulty);
+        // console.log('d  old', eras_per_block_data[step-1].x, diff2_duration, last_difficulty);
 
         difficulty = (current_difficulty * (diff1_duration/step_size_in_eth_blocks))
                      + (last_difficulty * (diff2_duration/step_size_in_eth_blocks));
@@ -1115,6 +1125,7 @@ async function updateDifficultyGraph(eth, num_days){
   var mining_target_values = new contractValueOverTime(eth, contract_address, '11');
   mining_target_values.addValuesInRange((current_eth_block-max_blocks), current_eth_block, initial_search_points);
   await refine_mining_target_values(mining_target_values);
+  //mining_target_values.duplicateLastValueAsLatest();
 
 
 
