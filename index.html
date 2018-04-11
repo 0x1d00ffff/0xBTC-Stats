@@ -227,6 +227,7 @@ Attributions:
     <script type="text/javascript" src="js/ethjs.js"></script>
     <script type="text/javascript" src="js/abi.js"></script>
     <script type="text/javascript" src="js/main.js"></script>
+    <script type="text/javascript" src="js/graphs.js"></script>
 
     <script type="text/javascript">
       try {
@@ -239,6 +240,14 @@ Attributions:
         fail;
       } finally {
         let searchParams = new URLSearchParams(window.location.search)
+
+        if(searchParams.has('reload')) {
+          var time = searchParams.get('reload');
+          setTimeout(function(){
+            location.reload()
+          },time*60000)
+        }
+
         if(!searchParams.has('page')
           || searchParams.get('page') == 'stats') {
           if(!searchParams.has('page')){
