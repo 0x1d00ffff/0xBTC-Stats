@@ -174,6 +174,22 @@ class contractValueOverTime {
       }
     }
   }
+  /* For some reason occasionally the last value loaded is zero. Running this
+     function will remove it, if it is there */
+  deleteLastPointIfZero() {
+    if (this.states.length == 0) {
+      return;
+    }
+    if (this.states[this.states.length-1][1].eq(new Eth.BN(0))) {
+      log('warning: got a zero value at end of dataset');
+      log('before:', this.states);
+
+      /* remove one item at location length-1 (last value) */
+      this.states.splice(this.states.length-1, 1);
+
+      log('after:', this.states);
+    }
+  }
 }
 
 
@@ -701,6 +717,7 @@ async function updateDifficultyGraph(eth, num_days){
   era_values.sortValues();
   tokens_minted_values.sortValues();
   era_values.printValuesToLog();
+  era_values.deleteLastPointIfZero();
 
   generateDifficultyGraph(eth, mining_target_values, era_values, tokens_minted_values);
 
