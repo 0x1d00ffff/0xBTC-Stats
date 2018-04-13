@@ -23,11 +23,12 @@ const _ZERO_BN = new Eth.BN(0, 10);
 
 /* colors used by pool names. todo: move to css, still use them for chart.js */
 var pool_colors = {
-  orange : "#C64500",
-  purple : "#4527A0",
-  blue   : "#0277BD",
-  green  : "#2E7D32",
-  yellow : "#997500",
+  orange      : "#C64500",
+  purple      : "#4527A0", // note: purple looks a lot like blue
+  blue        : "#0277BD",
+  green       : "#2E7D32",
+  yellow      : "#997500",
+  darkpurple  : "#662354",
 }
 
 /* TODO: figure out why it doesn't work w metamask */
@@ -420,6 +421,7 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
     "0x53ce57325c126145de454719b4931600a0bd6fc4" : [ "0xPool",            "http://0xPool.io",           pool_colors.purple ],
     "0x98b155d9a42791ce475acc336ae348a72b2e8714" : [ "0xBTCpool",         "http://0xBTCpool.com",       pool_colors.blue ],
     "0x363b5534fb8b5f615583c7329c9ca8ce6edaf6e6" : [ "mike.rs pool",      "http://mike.rs:3000",        pool_colors.green ],
+    "0x8dcee1c6302232c4cc5ce7b5ee8be16c1f9fd961" : [ "Mine0xBTC",         "http://mine0xbtc.eu",        pool_colors.darkpurple ],
     "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : [ "PiZzA pool",        "http://gpu.PiZzA",           pool_colors.yellow ],
     "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : [ "PiZzA pool",        "http://gpu.PiZzA",           pool_colors.yellow ],
     "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : [ "PiZzA pool",        "http://gpu.PiZzA",           pool_colors.yellow ],
