@@ -248,7 +248,7 @@ function generateDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_c
   }
 
   function getHashrateDataFromDifficultyAndErasPerBlockData(difficulty_data, eras_per_block_data) {
-    var expected_eras_per_block = 1/60; /* should be 60 times slower than ethereum */
+    var expected_eras_per_block = 1/40; /* should be 60 times slower than ethereum */
     var difficulty_data_index = 0;
     var difficulty_change_block_num = 0;
     var chart_data = []
@@ -335,6 +335,43 @@ function generateDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_c
       y: 1 / (eras_per_block_data[i].y * 4),
     })
   }
+
+
+  /* figure out how to scale chart: difficulty can be too high or too low */
+  var max_difficulty_value = 0
+  for (var i = 0; i < difficulty_data.length; i += 1) {
+    if (difficulty_data[i].y.toNumber() > max_difficulty_value) {
+      max_difficulty_value = difficulty_data[i].y.toNumber();
+    }
+  }
+
+  /* get max hashrate data, note - not a BN */
+  var max_hashrate_value = 0
+  for (var i = 0; i < hashrate_data.length; i += 1) {
+    if (hashrate_data[i].y > max_hashrate_value) {
+      max_hashrate_value = hashrate_data[i].y;
+    }
+  }
+
+  log('max_hashrate_value', max_hashrate_value);
+  log('max_difficulty_value', max_difficulty_value);
+
+  var hashrate_based_on_difficulty = max_difficulty_value * 2**22 / 600;
+  var difficulty_based_on_hashrate = max_hashrate_value / ((2**22) / 600);
+
+  log('hashrate_based_on_difficulty', hashrate_based_on_difficulty);
+  log('difficulty_based_on_hashrate', difficulty_based_on_hashrate);
+
+  /* if difficulty is higher than hashrate */
+  if (hashrate_based_on_difficulty > max_hashrate_value) {
+    max_hashrate_value = hashrate_based_on_difficulty;
+  } else {
+    max_difficulty_value = difficulty_based_on_hashrate;
+  }
+
+  log('max_hashrate_value', max_hashrate_value);
+  log('max_difficulty_value', max_difficulty_value);
+
   // var difficulty_data = []
   // for (var i = 0; i < target_values.length; i++) {
   //   if(target_values[i][1].eq(_ZERO_BN)) {
@@ -462,6 +499,7 @@ function generateDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_c
             },
             //maxTicksLimit: 6,
             autoSkip: true,
+            suggestedMax: max_difficulty_value,
           },
         }, {
           id: 'second-y-axis',
@@ -485,6 +523,7 @@ function generateDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_c
             },
             //maxTicksLimit: 6,
             autoSkip: true,
+            suggestedMax: max_hashrate_value,
             /*stepSize: 1000,*/
           }
         }]

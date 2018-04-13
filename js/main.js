@@ -6,10 +6,10 @@ function addToURL(value){
   }
 }
 
-const version = "v0.0.8";
+const version = "v0.0.9";
 
 log('0xBitcoin Stats', version);
-  el('#footerversion').innerHTML = version;
+el('#footerversion').innerHTML = version;
 
 var stats_updated_count = 0;
 /* todo: move these into some kind of contract helper class */
