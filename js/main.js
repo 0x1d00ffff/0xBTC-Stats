@@ -74,6 +74,11 @@ function calculateNewMiningDifficulty(current_difficulty,
   var epochs_mined = new Eth.BN(epochs_mined);
 
   var target_eth_blocks_since_last_difficulty_period = epochs_mined.mul(new Eth.BN(60));
+
+  if (target_eth_blocks_since_last_difficulty_period == 0) {
+    return 0;
+  }
+
   if(eth_blocks_since_last_difficulty_period.lt(target_eth_blocks_since_last_difficulty_period)) {
     //console.log('harder');
     var excess_block_pct = (target_eth_blocks_since_last_difficulty_period.mul(new Eth.BN(100))).div( eth_blocks_since_last_difficulty_period );
@@ -94,10 +99,6 @@ function calculateNewMiningDifficulty(current_difficulty,
     //make it easier
     var new_mining_target = current_mining_target.add(current_mining_target.div(new Eth.BN(2000)).mul(shortage_block_pct_extra));   //by up to 50 %
   }
-
-  // console.log('cur mining target', current_mining_target.toString(10));
-  // console.log('new mining target', new_mining_target.toString(10));
-  // console.log('min mining target', _MINIMUM_TARGET_BN.toString(10));
 
   /* never gunna happen, probably. */
   if(new_mining_target.lt(_MINIMUM_TARGET_BN)) //very difficult
