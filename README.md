@@ -1,33 +1,23 @@
-# 0xBTC
+# 0xBTC-Stats
 Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d00ffff.github.io/0xBTC-Stats/))
 
-#### BUGS
-
- - When loading graphs, occasionally the last epoch value loaded is 0, which
-   causes hashrate to be a very large negative number. 
-
-    4.77s  block # 5404660 ts  value[1]: 37579
-    4.77s  block # 5410420 ts  value[1]: 0
-    ...
-    for block 5404660 diff 20212668 uhr 141296790405.12 hr 387094332047.3599
-    for block 5410420 diff 20212668 uhr 141296790405.12 hr -55310334235770.875
 
 #### TODO
 
  - use lastDifficultyPeriodStarted to find/iterate over difficulty changes 
  - modify hexcolor algo to pick a random hue, leaving saturation/value constant
- - add selectors to change graph window size and resolution
- - scale y-axes in hashrate/difficulty graph such that the values on corresponding
-   axes match up. This way difficulty will visibly approach hashrate line on graph
+ - add selectors to change graph window size (30 days, 60 days) and resolution
  - move more of the static html (table header rows etc) from js into .html files
- - ~~colorize the miner names in the 'block distribution' table~~
- - add human-readable dates next to the eth block numbers in stats
  - add a set of useful links to the footer of the site
+ - ~~colorize the miner names in the 'block distribution' table~~
+ - ~~add human-readable dates next to the eth block numbers in stats~~
  - ~~improve hashrate graph accuracy: currently, we load a set of time 'windows' 
    and calcualte hashrate for each window, using the difficulty value set at the
    *end* of the window. A better technique: if window is over blocks 1-300 and
-   diffuculty changes at block 100, 1/3 are at low diff and 2/3 at high diff.~~~
-   Verify that this is fixed
+   diffuculty changes at block 100, 1/3 are at low diff and 2/3 at high diff.~~
+   ~~Verify that this is fixed~~
+ - ~~scale y-axes in hashrate/difficulty graph such that the values on corresponding
+   axes match up. This way difficulty will visibly approach hashrate line on graph~~
  - graphs to add:
    - ~~pie chart to 'block distribution' section~~
    - total hashes over time
@@ -36,6 +26,11 @@ Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d0
    - contract transactions / day
    - stacked line graph showing different miners hashrates over time
    - gas spent on mint()s over time
+
+#### BUGS
+
+ - ~~~When loading graphs, occasionally the last epoch value loaded is 0, which
+   causes hashrate to be a very large negative number. ~~~
 
 #### Misc notes
 
