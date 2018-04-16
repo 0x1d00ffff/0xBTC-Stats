@@ -384,7 +384,7 @@ function getMinerColor(address, known_miners) {
     var hexcolor = known_miners[address][2];
   } else {
     var address_url = 'https://etherscan.io/address/' + address;
-    var hexcolor = (simpleHash(0, address_url) & 0xFFFFFF) | 0x000000;
+    var hexcolor = (simpleHash(3, address_url) & 0xFFFFFF) | 0x000000;
     hexcolor = '#' + hexcolor.toString(16);
     
   }
