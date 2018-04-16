@@ -22,6 +22,7 @@ Attributions:
 
     <!--<link rel="stylesheet" type="text/css" href="/css/dark_custom.css">-->
     <title>0xBitcoin Statistics</title>
+    <meta name="descripton" content="Live statistics for 0xBitcoin - the mined bitcoin-like token for Ethereum.">
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117165354-1"></script>
     <script type="text/javascript" src="js/gtag.js"></script>
@@ -254,9 +255,11 @@ Attributions:
             addToURL('?page=stats');
           }
           log('STATS selected');
+          //$(document).attr("title", "0xBitcoin Statistics");
           updateAllStats();
         }else if(searchParams.get('page') == 'graphs') {
           log('GRAPHS selected');
+          $(document).attr("title", "0xBitcoin Statistics - Graphs");
           updateGraphData();
         }
       }
