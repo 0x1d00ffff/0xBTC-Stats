@@ -54,14 +54,12 @@ Attributions:
       <div class="row">
         <div class="column">
           <ul id="navigation" class="nav">
-            <li class="nav"><a href="./?page=stats#">stats</a></li>
-            <li class="nav"><a href="./?page=stats#miners">miners</a></li>
-            <li class="nav"><a href="./?page=stats#blocks">blocks</a></li>
-            <li class="nav"><a href="./?page=stats#miningcalculator">mining calculator</a></li>
-            <li class="nav"><a href="./?page=graphs#difficulty">difficulty / hashrate <span style="color:#FF1744;">(new)</span></a></li>
-            <!--<li class="nav"><a href="./?page=graphs#difficulty">hashrate</a></li>-->
-            <li class="nav"><a href="./?page=graphs#reward-time">reward time / supply</a></li>
-            <!--<li class="nav"><a href="./?page=graphs#reward-time">supply</a></li>-->
+            <li class="nav"><a href="./?page=stats&#">stats</a></li>
+            <li class="nav"><a href="./?page=stats&#miners">miners</a></li>
+            <li class="nav"><a href="./?page=stats&#blocks">blocks</a></li>
+            <li class="nav"><a href="./?page=stats&#miningcalculator">mining calculator</a></li>
+            <li class="nav"><a href="./?page=graphs&#difficulty">difficulty / hashrate <span style="color:#FF1744;">(new)</span></a></li>
+            <li class="nav"><a href="./?page=graphs&#reward-time">reward time / supply</a></li>
           </ul>
         </div>
       </div>
@@ -252,7 +250,7 @@ Attributions:
         if(!searchParams.has('page')
           || searchParams.get('page') == 'stats') {
           if(!searchParams.has('page')){
-            addToURL('?page=stats');
+            addToURL('?page=stats&');
           }
           log('STATS selected');
           //$(document).attr("title", "0xBitcoin Statistics");
