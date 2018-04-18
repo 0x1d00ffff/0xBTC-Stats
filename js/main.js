@@ -351,7 +351,7 @@ function showBlockDistributionPieChart(piechart_dataset, piechart_labels) {
 
   //Chart.defaults.global.elements.arc.backgroundColor = 'rgba(255,0,0,1)';
   Chart.defaults.global.elements.arc.borderColor = 'rgb(32, 34, 38)';
-  Chart.defaults.global.elements.arc.borderWidth = 6;
+  Chart.defaults.global.elements.arc.borderWidth = 3;
 
   /* hashrate and difficulty chart */
   var hr_diff_chart = new Chart(document.getElementById('chart-block-distribution').getContext('2d'), {
