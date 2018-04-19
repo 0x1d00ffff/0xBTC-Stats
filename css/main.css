@@ -9,6 +9,11 @@ td > div {
   white-space: nowrap;
 }
 */
+img.top-logo {
+  float: left;
+  margin: 1.09em 0.67em 0 0;
+  padding-right: 0;
+}
 .add-top-padding {
   margin-top: 10rem;
 }
@@ -54,11 +59,13 @@ li.nav {
   padding-left: 1rem;
 }
 
+
 /*
 div {
-  border: 1px solid white;
+  outline: 1px solid white;
 }
 */
+
 
 /* deprecated, would be nice to use */
 .poolcolor-orange { color: #FF6C04 }
