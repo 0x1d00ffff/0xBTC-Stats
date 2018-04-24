@@ -765,12 +765,6 @@ async function updateDifficultyGraph(eth, num_days){
 function updateGraphData() {
   // createStatsTable();
   // updateStatsTable(stats);
-  //el('#stats-row').innerHTML = "";
-  el('#row-statistics').innerHTML = ''; // may not need this
-  el('#row-miners').innerHTML = ''; // may not need this
-  el('#row-blocks').innerHTML = ''; // may not need this
-  el('#row-miningcalculator').innerHTML = ''; // may not need this
   //generateDifficultyGraph('');
   setTimeout(()=>{updateDifficultyGraph(eth, 60)}, 0); /* 60 days */
-  updateLastUpdatedTime();
 }

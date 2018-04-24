@@ -7,6 +7,14 @@ body {
     color: #f2f2f2;
 }
 
+img.top-logo { 
+  opacity: 0.7; 
+} 
+
+img.top-logo:hover { 
+  opacity: 1; 
+}
+
 .navigation .title, .navigation-title {
     color: #f2f2f2;
 }
@@ -59,6 +67,35 @@ td {
 span.poolname {
   color: #F2F2F2;
 }
+i.navicon {
+  color: #d2d2d2;
+}
+i.helpicon {
+  color: #b2b2b2;
+}
+
+
+/* mining calculator */
+input {
+  color: #f2f2f2;
+}
+select {
+  color: #f2f2f2;
+}
+.button.button-outline {
+  color: #cc66ff;
+}
+select option {
+    background: #2c2e30;
+    /*
+    margin: 40px;
+    color: #ffffff;
+    text-shadow: 0 1px 0 #2c2e30;
+    */
+}
+blockquote {
+  background: #2c2e30;
+}
 
 /* deprecated, would be nice to use */
 .poolcolor-orange { background-color: #C64500 }
@@ -67,3 +104,11 @@ span.poolname {
 .poolcolor-green  { background-color: #2E7D32 }
 .poolcolor-yellow { background-color: #997500 }
 .poolcolor-darkpurple { background-color: #662354 }
+
+.poolcolor-red {background-color: #f44336 } /* unused */
+.poolcolor-pink {background-color: #e91e63} /* unused */
+.poolcolor-lightpurple {background-color: #9c27b0} /* unused */
+.poolcolor-teal {background-color: #009688} /* unused */
+.poolcolor-lime {background-color: #cddc39} /* unused */
+.poolcolor-brown {background-color: #8d6e63} /* unused */
+.poolcolor-grey {background-color: #78909c} /* unused */

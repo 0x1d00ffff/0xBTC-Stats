@@ -5,6 +5,8 @@ Attributions:
   ethjs - https://github.com/ethjs/ethjs
   Google Material Design Color Palatte - https://htmlcolorcodes.com/color-chart/material-design-color-chart/
   Chart.js - http://www.chartjs.org/
+  jqMath - https://mathscribe.com/author/jqmath.html
+  TIPR tooltips - http://www.tipue.com/tipr/
 -->
 
 <html>
@@ -12,13 +14,25 @@ Attributions:
     <meta charset='utf-8'>
     <!-- jquery is here because scripts need it early on. may want to move other js imports here. -->
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <!-- jqMath allows for real equation formatting -->
+    <script src="js/jqmath-etc-0.4.6.min.js" charset="utf-8"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <!-- note: lodash is only used for _.debounce() -->
+    <script src="https://unpkg.com/lodash@4.16.0"></script>
+    <script src="js/tipr.min.js"></script>
+
 
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.2.3/milligram.min.css">
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
     <link rel="stylesheet" type="text/css" href="//cdn.rawgit.com/necolas/normalize.css/master/normalize.css">
+
+    <link rel="stylesheet" type="text/css" href="css/jqmath-0.4.3.css">
+
     <link rel="stylesheet" type="text/css" href="css/main.css">
     <link rel="stylesheet" type="text/css" href="css/themes/dark1.css">
+    <link rel="stylesheet" type="text/css" href="css/ionicons.css">
+    <link rel="stylesheet" type="text/css" href="css/tipr-corso.css">
 
     <!--<link rel="stylesheet" type="text/css" href="/css/dark_custom.css">-->
     <title>0xBitcoin Statistics</title>
@@ -30,6 +44,15 @@ Attributions:
   <body>
     <script type="text/javascript">
       var el = function(id){ return document.querySelector(id); };
+      /* 'safe' version if el that returns a dummy for non-existent elements */
+      var el_safe = function(id) { 
+        let e = el(id); 
+        if (e) {
+          return e;
+        } else {
+          return {};
+        }
+      }
 
       var log = function(){
         // 1. Convert args to a normal array
@@ -50,21 +73,25 @@ Attributions:
       <div class="row">
         <div class="column">
           <img class="top-logo" alt="0xBitcoin Logo" src="img/0xBTC_Orange-40px.png" height=40 width=40 />
-          <h1>0xBitcoin</h1>
+          <h1>0xBitcoin Token Statistics</h1>
         </div>
+        <!--
         <div class="column">
           <h1>Token Statistics</h1>
         </div>
+        -->
       </div>
       <div class="row">
         <div class="column">
           <ul id="navigation" class="nav">
-            <li class="nav"><a href="./?page=stats&#">stats</a></li>
-            <li class="nav"><a href="./?page=stats&#miners">miners</a></li>
-            <li class="nav"><a href="./?page=stats&#blocks">blocks</a></li>
-            <li class="nav"><a href="./?page=stats&#miningcalculator">mining calculator</a></li>
-            <li class="nav"><a href="./?page=graphs&#difficulty">difficulty / hashrate <span style="color:#FF1744;">(new)</span></a></li>
-            <li class="nav"><a href="./?page=graphs&#reward-time">reward time / supply</a></li>
+            <li class="nav"><a href="./?page=stats&#"><i class="icon ion-ios-pulse navicon"></i> stats</a></li>
+            <li class="nav"><a href="./?page=stats&#miners"><i class="icon ion-ios-people-outline navicon"></i> miners</a></li>
+            <li class="nav"><a href="./?page=stats&#blocks"><i class="icon ion-ios-browsers-outline navicon"></i> blocks</a></li>
+
+            <li class="nav"><a href="./?page=miningcalculator&#"><i class="icon ion-ios-calculator-outline navicon"></i> mining calculator <span style="color:#FF1744;">(new)</span></a></li>
+
+            <li class="nav"><a href="./?page=graphs&#"><i class="icon ion-ios-flame-outline navicon"></i> difficulty / hashrate</a></li>
+            <li class="nav"><a href="./?page=graphs&#reward-time"><i class="icon ion-ios-speedometer-outline navicon"></i> reward time / supply</a></li>
           </ul>
         </div>
       </div>
@@ -76,9 +103,9 @@ Attributions:
         <div class="column"><button type="button" onClick="location.href='#difficulty'" class="nav-difficulty">DIFFICULTY</button></div>
         <div class="column"><button type="button" onClick="location.href='#hashrate'" class="nav-hashrate">HASHRATE</button></div>
       </div>-->
-      <div id="row-statistics">
+      <div style="display:none;" id="row-statistics">
         <div class="row">
-          <div class="column"><h4 class="add-top-padding">Current Contract Status</h4></div>
+          <div class="column"><h4 class="add-top-padding-5">Current Contract Status</h4></div>
         </div>
         <div class="row">
           <div class="column">
@@ -91,7 +118,7 @@ Attributions:
           </div>
         </div>
       </div>
-      <div id="row-miners">
+      <div style="display:none;" id="row-miners">
         <div class="row">
           <div class="column"><h4 class="add-top-padding"><a name="miners"></a>Block distribution since last retarget</h4></div>
         </div>
@@ -109,7 +136,7 @@ Attributions:
           </div>
         </div>
       </div>
-      <div id="row-blocks">
+      <div style="display:none;" id="row-blocks">
         <div class="row">
           <div class="column"><h4 class="add-top-padding"><a name="blocks"></a>Blocks solved since last retarget</h4></div>
         </div>
@@ -125,6 +152,7 @@ Attributions:
         </div>
       </div>
     
+      <!--
       <div id="row-miningcalculator">
         <div class="row">
           <div class="column"><h4 class="add-top-padding"><a name="miningcalculator"></a>Mining calculator</h4></div>
@@ -147,19 +175,128 @@ Attributions:
           </div>
         </div>
       </div>
+    -->
+    
+      <div style="display:none;" id="row-miningcalculator">
+        <div class="row">
+          <div class="column"><h4 class="add-top-padding"><a name="miningcalculator"></a>Mining calculator</h4></div>
+        </div>
+        <div id="editor">
+          <div class="row">
+            <div class="column">
+              <div class="container">
+                <div class="row">
+                  <div class="column">
+                    <label for="hashrateField">Your Hashrate:</label>
+                    <input type="text" :value="hashrate" @input="updateHashrate" id="hashrateField" onfocus="this.select()" autofocus></input>
+                    <select :value="units" @input="updateUnits" id="unitField">
+                      <option value="1">H/s</option>
+                      <option value="1e3">Kh/s</option>
+                      <option value="1e6">Mh/s</option>
+                      <option value="1e9">Gh/s</option>
+                      <option value="1e12">Th/s</option>
+                      <option value="1e15">Eh/s</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="column">
+                    <label for="poolFeeField" class="add-top-padding-2">Pool Fee:</label>
+                    <input type="text" :value="poolfee" @input="updatePoolFee" id="poolFeeField" onfocus="this.select()" autofocus></input><span style="margin-left:10px;line-height: 40px;">percent</span>
+                  </div>
+                  <div class="column">
+                      <label for="mintFailureRateField" class="add-top-padding-2">Mint Failure Rate: <i class="icon ion-ios-help-outline helpicon tip" data-tip="Even a perfect setup will occasionally fail to mint a block. This is similar to 'stale blocks' in the Bitcoin blockchain. Failure rates can range from 1.5%-15% depending on network block rate, latency, connection type, and luck." ></i></label>
+                    <input type="text" :value="mint_failure_rate" @input="updateMintFailureRate" id="mintFailureRateField" onfocus="this.select()" autofocus></input><span style="margin-left:10px;line-height: 40px;">percent</span>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="column">
+                    <label for="difficultyField" class="add-top-padding-2">Difficulty:</label>
+                    <input type="text" :value="difficulty" @input="updateDifficulty" id="difficultyField" onfocus="this.select()" autofocus></input>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="column" style="text-align: center;">
+                    <a class="button button-outline" v-on:click="useCurrentDiff" id="currentDiffButton">Use Current Diff</a>
+                  </div>
+                  <div class="column" style="text-align: center;">
+                    <a class="button button-outline tip" v-on:click="useNextDiff" id="nextDiffButton" data-tip="This is only an estimate, so don't be suprised when it changes.">Use Next Diff</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="column">
+              <!--<label for="poolMiningTable">Pool Mining</label>-->
+              <table id="poolMiningTable">
+                <thead>
+                  <tr>
+                    <th>Pool Mining</th>
+                    <th>Tokens</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Per Hour</td>
+                    <td>{{ Number((calculatedTokensPerDay / 24).toFixed(2)).toLocaleString() }}</td>
+                  </tr>
+                  <tr>
+                    <td>Per Day</td>
+                    <td>{{ Number((calculatedTokensPerDay * 1).toFixed(2)).toLocaleString() }}</td>
+                  </tr>
+                  <tr>
+                    <td>Per Week</td>
+                    <td>{{ Number((calculatedTokensPerDay * 7).toFixed(2)).toLocaleString() }}</td>
+                  </tr>
+                  <tr>
+                    <td>Per Month</td>
+                    <td>{{ Number((calculatedTokensPerDay * 30.4167).toFixed(2)).toLocaleString() }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <label for="soloMiningTimeSpan">Solo Mining</label>
+              <span id="soloMiningTimeSpan">{{ calculatedSoloTimePerBlock }} per block (average)</span>
+              <br /s>
+              <span id="soloMiningTimeSpan">{{ calculatedSoloTimePerTenBlocks }} per 10 blocks (more realistic)</span>
+            </div>
+          </div>
+          <div class="row">
+            <div class="column"><h5 class="add-top-padding">How Does The Calculator Work?</h5></div>
+          </div>
+          <div class="row">
+            <div class="column">
+              <p>
+                At its heart is the standard hashrate equation:
+                <blockquote>
+                  time to solve a block in seconds $= {2^22⋅\difficulty}/\hashrate$
+                  <br />
+                  → blocks per second $= \hashrate/{2^22⋅\difficulty}$
+                  <br />
+                  → tokens per day $=({50\tokens}/\text"block")({60\seconds}/\text"minute")({60\minutes}/\text"hour")({24\hours}/\text"day")\hashrate/{2^22⋅\difficulty}$
+                  <br />
+                  → tokens per day $={4320000⋅\hashrate}/{2^22⋅\difficulty}$
+                </blockquote>
+              </p>
+              <p>
+                For a more detailed calculator and individual GPU benchmarks, visit:
+              </p>
+              <ul>
+                <li><a href="https://docs.google.com/spreadsheets/d/1lpQufwMHeozyz2X5Xq9MhjLr_hVTkQfzpzXcdFQDRGg/">
+                  0xBTC Mining Calculator
+                </a> by minerjoe78, mikers, and others</li>
+                <li><a href="https://docs.google.com/spreadsheets/d/1lbNjXetgN0_CJP-jOVkVr4pvwn_sivbYjNyaU1KbnwQ/">
+                  0xBitcoin GPU Speed/Benchmarks
+                </a> by the 0xBitcoin community </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
 
 
-      <div id="row-difficulty">
+      <div style="display:none;" id="row-difficulty">
         <div class="row">
           <div class="column"><h4 class="add-top-padding"><a name="difficulty"></a>Hashrate and Difficulty over the last 60 days</h4></div>
         </div>
-        <!-- <div class="row">
-          <div class="column">
-            Note: Experimental. Timestamps are estimated (should be within 10%). 
-            <br>
-            <br>
-          </div>
-        </div> -->
         <div class="row">
           <div class="column">
             <div id='difficultystats'>
@@ -169,7 +306,7 @@ Attributions:
         </div>
       </div>
 
-      <div id="row-reward-time">
+      <div style="display:none;" id="row-reward-time">
         <div class="row">
           <div class="column"><h4 class="add-top-padding"><a name="reward-time"></a>Average Reward Time and Supply over the last 60 days</h4></div>
         </div>
@@ -211,7 +348,7 @@ Attributions:
 -->
 
       <div id="row-footer">
-        <div class="row add-top-padding">
+        <div class="row add-top-padding add-bottom-padding-5">
           <div class="column">
             Data fetched at:
             <span id="LastUpdatedTime">00:00:00</span>
@@ -222,7 +359,7 @@ Attributions:
               </span>
             </div>
           </div>
-          <div class="column"><font color="#C0392B">❤</font> <a href="https://etherscan.io/address/0x1d00FFffB205CC0C5a51E7c77a7668A8B90BBb90">0x1d00FFffB205CC0C5a51E7c77a7668A8B90BBb90</a></div>
+          <div class="column"><a href="https://etherscan.io/address/0x1d00FFffB205CC0C5a51E7c77a7668A8B90BBb90"><font color="#C0392B">❤</font> 0x1d00FFffB205CC0C5a51E7c77a7668A8B90BBb90</a></div>
         </div>
       </div>
     </div>
@@ -232,11 +369,18 @@ Attributions:
     <script type="text/javascript" src="js/abi.js"></script>
     <script type="text/javascript" src="js/main.js"></script>
     <script type="text/javascript" src="js/graphs.js"></script>
+    <script type="text/javascript" src="js/mining-calculator.js"></script>
 
     <script type="text/javascript">
       try {
         $(document).ready(function() {
            log("DOMready");
+          /* initialize tipr tooltips */
+          $('.tip').tipr({
+              'speed': 800,
+              //'mode': 'above',
+              //'space': 500
+          });
         });
       } catch (err) {
         log('failed to set DOMready fn. Jquery load error?');
@@ -258,13 +402,25 @@ Attributions:
             addToURL('?page=stats&');
           }
           log('STATS selected');
+          $('#row-statistics').show(); // may not need this
+          $('#row-miners').show(); // may not need this
+          $('#row-blocks').show(); // may not need this
           //$(document).attr("title", "0xBitcoin Statistics");
-          updateAllStats();
+          el('#statistics').innerHTML = '';
+          updateAndDisplayAllStats();
+        }else if(searchParams.get('page') == 'miningcalculator') {
+          log('MININGCALCULATOR selected');
+          $(document).attr("title", "0xBitcoin Statistics - Mining Calculator");
+          $("#row-miningcalculator").show();
+          loadAllStats();
         }else if(searchParams.get('page') == 'graphs') {
           log('GRAPHS selected');
           $(document).attr("title", "0xBitcoin Statistics - Graphs");
+          $('#row-difficulty').show();
+          $('#row-reward-time').show();
           updateGraphData();
         }
+        updateLastUpdatedTime();
       }
     </script>
   </body>

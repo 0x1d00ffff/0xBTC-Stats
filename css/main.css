@@ -17,6 +17,15 @@ img.top-logo {
 .add-top-padding {
   margin-top: 10rem;
 }
+.add-top-padding-2 {
+  margin-top: 2rem;
+}
+.add-top-padding-5 {
+  margin-top: 5rem;
+}
+.add-bottom-padding-5 {
+  margin-bottom: 5rem;
+}
 .nav-button {
   /*align: center;*/
   margin:auto;
@@ -52,11 +61,24 @@ ul.nav {
 }
 li.nav {
   display: inline;
+  white-space: nowrap;
 }
 #navigation li + li:before {
-  content: " | ";
-  padding-right: 1rem;
-  padding-left: 1rem;
+  /*content: " | ";*/
+  content: " ";
+  /*padding-right: 1rem;*/
+  padding-left: 2rem;
+}
+
+i.navicon {
+  font-size: 1.5em;
+  vertical-align: middle;
+  padding-right: 0.25rem;
+}
+i.helpicon {
+  font-size: 1em;
+  vertical-align: text-bottom;
+  margin-left: 10;
 }
 
 
@@ -66,6 +88,41 @@ div {
 }
 */
 
+/* mining calculator */
+input#hashrateField, 
+input#poolFeeField,
+input#mintFailureRateField {
+  width:10rem;
+  float:left;
+}
+select#unitField {
+  width:8rem;
+  float:left;
+}
+/*
+input#poolFeeField {
+  padding-right:20px;
+}
+*/
+input {
+  text-align:right;
+}
+label {
+  clear: left;
+}
+a#currentDiffButton {
+  margin: 5px;
+  left: 0px;
+}
+a#nextDiffButton {
+  margin: 5px;
+  /*right: 0px;*/
+}
+
+/* use milligram fonts in jqMath equations */
+fmath {
+  font-family: inherit;
+}
 
 /* deprecated, would be nice to use */
 .poolcolor-orange { color: #FF6C04 }
