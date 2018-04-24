@@ -5,10 +5,12 @@ Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d0
 #### TODO
 
  - use lastDifficultyPeriodStarted to find/iterate over difficulty changes 
- - modify hexcolor algo to pick a random hue, leaving saturation/value constant
  - add selectors to change graph window size (30 days, 60 days) and resolution
  - move more of the static html (table header rows etc) from js into .html files
  - add a set of useful links to the footer of the site
+ - add btc/0xbtc price graph
+ - switch over completely to Vue
+ - ~~modify hexcolor algo to pick a random hue, leaving saturation/value constant~~
  - ~~colorize the miner names in the 'block distribution' table~~
  - ~~add human-readable dates next to the eth block numbers in stats~~
  - ~~improve hashrate graph accuracy: currently, we load a set of time 'windows' 
@@ -97,3 +99,29 @@ how to figure out what values are located where:
                 console.log('    u128[1](str): bad');
             }
     }
+
+ionicons
+
+blocks: ion-ios-albums-outline, ion-ios-browsers-outline,  ion-android-apps, ion-cube
+transfers: ion-ios-shuffle, ion-ios-swap-outline
+calculator: ion-ios-calculator-outline
+history: ion-ios-calendar-outline, ion-ios-archive-outline, ion-ios-time-outline
+pie chart: ion-ios-pie-outline
+bar graph: ion-ios-podium-outline, ion-ios-stats-outline
+line chart: ion-ios-trending-up-outline
+speed: ion-ios-stopwatch-outline, ion-ios-timer-outline
+money: ion-ios-cash-outline
+book: ion-ios-book-outline
+social: ion-ios-chatboxes-outline, ion-ios-quote-outline, ion-ios-radio-outline
+holders: ion-ios-heart-outline
+explore: ion-ios-eye-outline, ion-ios-search-outline
+globe: ion-ios-globe-outline
+orbit: ion-ios-ionic-outline
+experimental: ion-ios-flask-outline
+info: ion-ios-information-circle-outline
+wallet: ion-ios-key-outline, ion-ios-lock-outline
+aparrel: ion-ios-shirt-outline
+contract: ion-ios-paper-outline
+
+reddit: ion-logo-reddit
+
