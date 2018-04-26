@@ -34,15 +34,18 @@ var pool_colors = {
   green       : "#2E7D32",
   yellow      : "#997500",
   darkpurple  : "#662354",
+  darkred     : "hsl(356, 48%, 30%)",
+  teal        : "#009688",
 
   /* colors below here are not assigned yet */
   red         : "#f44336",
   pink        : "#e91e63",
   lightpurple : "#9c27b0",
-  teal        : "#009688",
   lime        : "#cddc39",
   brown       : "#8d6e63",
   grey        : "#78909c",
+
+
 }
 
 /* TODO: figure out why it doesn't work w metamask */
@@ -451,11 +454,13 @@ function getMinerNameLinkHTML(address, known_miners) {
 function updateAllMinerInfo(eth, stats, hours_into_past){
 
   var known_miners = {
-    "0xf3243babf74ead828ac656877137df705868fd66" : [ "Token Mining Pool", "http://TokenMiningPool.com", pool_colors.orange ],
-    "0x53ce57325c126145de454719b4931600a0bd6fc4" : [ "0xPool",            "http://0xPool.io",           pool_colors.purple ],
-    "0x98b155d9a42791ce475acc336ae348a72b2e8714" : [ "0xBTCpool",         "http://0xBTCpool.com",       pool_colors.blue ],
-    "0x363b5534fb8b5f615583c7329c9ca8ce6edaf6e6" : [ "mike.rs pool",      "http://mike.rs:3000",        pool_colors.green ],
-    "0x8dcee1c6302232c4cc5ce7b5ee8be16c1f9fd961" : [ "Mine0xBTC",         "http://mine0xbtc.eu",        pool_colors.darkpurple ],
+    "0xf3243babf74ead828ac656877137df705868fd66" : [ "Token Mining Pool", "http://TokenMiningPool.com",     pool_colors.orange ],
+    "0x53ce57325c126145de454719b4931600a0bd6fc4" : [ "0xPool",            "http://0xPool.io",               pool_colors.purple ],
+    "0x98b155d9a42791ce475acc336ae348a72b2e8714" : [ "0xBTCpool",         "http://0xBTCpool.com",           pool_colors.blue ],
+    "0x363b5534fb8b5f615583c7329c9ca8ce6edaf6e6" : [ "mike.rs pool",      "http://mike.rs:3000",            pool_colors.green ],
+    "0x8dcee1c6302232c4cc5ce7b5ee8be16c1f9fd961" : [ "Mine0xBTC",         "http://mine0xbtc.eu",            pool_colors.darkpurple ],
+    "0x20744acca6966c0f45a80aa7baf778f4517351a4" : [ "PoolOfD32th",       "http://0xbtc.poolofd32th.club",  pool_colors.darkred ],
+    "0xd4ddfd51956c19f624e948abc8619e56e5dc3958" : [ "0xMiningPool",      "http://0xminingpool.com/",       pool_colors.teal ],
     "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : [ "PiZzA pool",        "http://gpu.PiZzA",           pool_colors.yellow ],
     "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : [ "PiZzA pool",        "http://gpu.PiZzA",           pool_colors.yellow ],
     "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : [ "PiZzA pool",        "http://gpu.PiZzA",           pool_colors.yellow ],
