@@ -410,12 +410,12 @@ Attributions:
           updateAndDisplayAllStats();
         }else if(searchParams.get('page') == 'miningcalculator') {
           log('MININGCALCULATOR selected');
-          $(document).attr("title", "0xBitcoin Statistics - Mining Calculator");
+          $(document).attr("title", "Mining Calculator - 0xBitcoin Statistics");
           $("#row-miningcalculator").show();
           loadAllStats();
         }else if(searchParams.get('page') == 'graphs') {
           log('GRAPHS selected');
-          $(document).attr("title", "0xBitcoin Statistics - Graphs");
+          $(document).attr("title", "Graphs - 0xBitcoin Statistics");
           $('#row-difficulty').show();
           $('#row-reward-time').show();
           updateGraphData();
