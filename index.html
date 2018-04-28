@@ -415,10 +415,18 @@ Attributions:
           loadAllStats();
         }else if(searchParams.get('page') == 'graphs') {
           log('GRAPHS selected');
+          let days = 60;
+          let points = 60;
           $(document).attr("title", "Graphs - 0xBitcoin Statistics");
+          if(searchParams.get('days')) {
+            days = searchParams.get('days');
+          }
+          if(searchParams.get('points')) {
+            points = searchParams.get('points');
+          }
           $('#row-difficulty').show();
           $('#row-reward-time').show();
-          updateGraphData();
+          updateGraphData(days, points);
         }
         updateLastUpdatedTime();
       }

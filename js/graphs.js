@@ -498,6 +498,7 @@ function generateDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_c
               return toReadableThousandsLong(value);
             },
             //maxTicksLimit: 6,
+            min: 0,
             autoSkip: true,
             suggestedMax: max_difficulty_value,
           },
@@ -522,6 +523,7 @@ function generateDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_c
               return toReadableHashrate(value);
             },
             //maxTicksLimit: 6,
+            min: 0,
             autoSkip: true,
             suggestedMax: max_hashrate_value,
             /*stepSize: 1000,*/
@@ -706,7 +708,7 @@ async function refine_mining_target_values(mining_target_values){
 }
 
 
-async function updateDifficultyGraph(eth, num_days){
+async function updateDifficultyGraph(eth, num_days, num_search_points){
   /*
   note: this is implementation of diff. in contract:
       function getMiningDifficulty() public constant returns (uint) 
@@ -714,7 +716,7 @@ async function updateDifficultyGraph(eth, num_days){
   */
   var contract_address = '0xB6eD7644C69416d67B522e20bC294A9a9B405B31';
   var max_blocks = num_days*24*60*(60/15);
-  var initial_search_points = num_days; /* in some crazy world where readjustments happen every day, this will catch all changes */
+  var initial_search_points = num_search_points; /* in some crazy world where readjustments happen every day, this will catch all changes */
   var previous = 0;
   //var current_eth_block = getValueFromStats('Last Eth Block', stats);
   var current_eth_block = parseInt((await eth.blockNumber()).toString(10), 10);
@@ -762,9 +764,9 @@ async function updateDifficultyGraph(eth, num_days){
 
 }
 
-function updateGraphData() {
+function updateGraphData(history_days, num_search_points) {
   // createStatsTable();
   // updateStatsTable(stats);
   //generateDifficultyGraph('');
-  setTimeout(()=>{updateDifficultyGraph(eth, 60)}, 0); /* 60 days */
+  setTimeout(()=>{updateDifficultyGraph(eth, history_days, num_search_points)}, 0); /* 60 days */
 }
