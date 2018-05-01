@@ -27,7 +27,7 @@ mining_calculator_app = new Vue({
       let seconds = ((2**22) * this.difficulty) / unitless_hashrate;
 
       // 1.2 is a fudge-factor based on feedback from users. Need to find a better adjustment factor
-      return 1.2 * secondsToReadableTime(seconds);
+      return secondsToReadableTime(1.2 *seconds);
     },
     calculatedSoloTimePerTenBlocks: function () {
       let unitless_hashrate = (this.hashrate * this.units) * (1-(this.mint_failure_rate/100));
@@ -35,7 +35,7 @@ mining_calculator_app = new Vue({
       let seconds = 10 * ((2**22) * this.difficulty) / unitless_hashrate;
 
       // 1.2 is a fudge-factor based on feedback from users. Need to find a better adjustment factor
-      return 1.2 * secondsToReadableTime(seconds);
+      return secondsToReadableTime(1.2 *seconds);
     },
   },
   methods: {
