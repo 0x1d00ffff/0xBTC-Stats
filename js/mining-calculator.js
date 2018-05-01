@@ -18,21 +18,24 @@ mining_calculator_app = new Vue({
       // console.log('cur diff ' + this.current_difficulty);
       // console.log('nex diff ' + this.next_difficulty);
 
-      return (1-(this.poolfee/100)) * 86400 * this.block_reward * unitless_hashrate / ((2**22) * this.difficulty);
+      // 0.8 is a fudge-factor based on feedback from users. Need to find a better adjustment factor
+      return 0.8 * (1-(this.poolfee/100)) * 86400 * this.block_reward * unitless_hashrate / ((2**22) * this.difficulty);
     },
     calculatedSoloTimePerBlock: function () {
       let unitless_hashrate = (this.hashrate * this.units) * (1-(this.mint_failure_rate/100));
 
       let seconds = ((2**22) * this.difficulty) / unitless_hashrate;
 
-      return secondsToReadableTime(seconds);
+      // 1.2 is a fudge-factor based on feedback from users. Need to find a better adjustment factor
+      return 1.2 * secondsToReadableTime(seconds);
     },
     calculatedSoloTimePerTenBlocks: function () {
       let unitless_hashrate = (this.hashrate * this.units) * (1-(this.mint_failure_rate/100));
 
       let seconds = 10 * ((2**22) * this.difficulty) / unitless_hashrate;
 
-      return secondsToReadableTime(seconds);
+      // 1.2 is a fudge-factor based on feedback from users. Need to find a better adjustment factor
+      return 1.2 * secondsToReadableTime(seconds);
     },
   },
   methods: {
