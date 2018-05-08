@@ -22,6 +22,7 @@ Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d0
    axes match up. This way difficulty will visibly approach hashrate line on graph~~
  - graphs to add:
    - ~~pie chart to 'block distribution' section~~
+   - power consumption?
    - total hashes over time
    - token holders over time
    - token transfers / day
@@ -31,8 +32,10 @@ Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d0
 
 #### BUGS
 
- - ~~~When loading graphs, occasionally the last epoch value loaded is 0, which
-   causes hashrate to be a very large negative number. ~~~
+ - On first page load, the last hashrate point may not display. Refreshing the 
+   page causes the value to display. Need more testing to find source.
+ - ~~When loading graphs, occasionally the last epoch value loaded is 0, which
+   causes hashrate to be a very large negative number. ~~
 
 #### Misc notes
 
