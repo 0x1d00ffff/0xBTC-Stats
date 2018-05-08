@@ -34,7 +34,6 @@ Attributions:
     <link rel="stylesheet" type="text/css" href="css/ionicons.css">
     <link rel="stylesheet" type="text/css" href="css/tipr-corso.css">
 
-    <!--<link rel="stylesheet" type="text/css" href="/css/dark_custom.css">-->
     <title>0xBitcoin Statistics</title>
     <meta name="descripton" content="Live statistics for 0xBitcoin - the mined bitcoin-like token for Ethereum.">
     <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -65,9 +64,6 @@ Attributions:
       var globalTimerStart = Date.now();
 
       let searchParams = new URLSearchParams(window.location.search)
-      //if(searchParams.has('theme') && searchParams.get('theme') == 'dark1') {
-        //$('head').append('<link rel="stylesheet" type="text/css" href="css/themes/dark1.css">');
-      //}
     </script>
     <div class="container">
       <div class="row">
@@ -75,11 +71,6 @@ Attributions:
           <img class="top-logo" alt="0xBitcoin Logo" src="img/0xBTC_Orange-40px.png" height=40 width=40 />
           <h1>0xBitcoin Token Statistics</h1>
         </div>
-        <!--
-        <div class="column">
-          <h1>Token Statistics</h1>
-        </div>
-        -->
       </div>
       <div class="row">
         <div class="column">
@@ -95,14 +86,7 @@ Attributions:
           </ul>
         </div>
       </div>
-      <!--
-      <div class="row">
-        <div class="column"><button type="button" onClick="location.href='#miners'" class="nav-miners">MINERS</button></div>
-        <div class="column"><button type="button" onClick="location.href='#blocks'" class="nav-blocks">BLOCKS</button></div>
-        <div class="column"><button type="button" onClick="location.href='#blockrate'" class="nav-blockrate">INFLATION</button></div>
-        <div class="column"><button type="button" onClick="location.href='#difficulty'" class="nav-difficulty">DIFFICULTY</button></div>
-        <div class="column"><button type="button" onClick="location.href='#hashrate'" class="nav-hashrate">HASHRATE</button></div>
-      </div>-->
+
       <div style="display:none;" id="row-statistics">
         <div class="row">
           <div class="column"><h4 class="add-top-padding-5">Current Contract Status</h4></div>
@@ -151,31 +135,6 @@ Attributions:
           </div>
         </div>
       </div>
-    
-      <!--
-      <div id="row-miningcalculator">
-        <div class="row">
-          <div class="column"><h4 class="add-top-padding"><a name="miningcalculator"></a>Mining calculator</h4></div>
-        </div>
-        <div class="row">
-          <div class="column">
-            <p>
-              <em>Coming soon! For now, you can use this:</em>
-            </p>
-            <p>
-              <em>tokens per day = 4,320,000  x  hashrate  /  (difficulty  x  2<sup>22</sup>)</em>
-              <br>
-              Note: this does <span style="font-weight:600;">not</span> factor pool fees. Subtract 15% from the final amount.
-            </p>
-            <p>
-              Above is based on the hashrate equation:
-              <br>
-              time to solve a block in seconds = difficulty x 2<sup>22</sup> / hashrate
-            </p>
-          </div>
-        </div>
-      </div>
-    -->
     
       <div style="display:none;" id="row-miningcalculator">
         <div class="row">
@@ -320,34 +279,6 @@ Attributions:
           </div>
         </div>
       </div>
-
-<!--
-      <div class="row">
-        <div class="column"><h4 class="add-top-padding"><a name="blockrate"></a>Minutes per reward</h4></div>
-      </div>
-      <div class="row">
-        <div class="column">
-          <table>
-            <tbody id="blockratestats">
-              <tr><td colspan="3">Loading info from the blockchain...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
-      <div class="row">
-        <div class="column"><h4 class="add-top-padding"><a name="hashrate"></a>Network hashrate over time</h4></div>
-      </div>
-      <div class="row">
-        <div class="column">
-          <table>
-            <tbody id="difficultystats">
-              <tr><td colspan="3">Loading info from the blockchain...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
--->
 
       <div id="row-footer">
         <div class="row add-top-padding add-bottom-padding-5">
