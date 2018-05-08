@@ -6,7 +6,7 @@ function addToURL(value){
   }
 }
 
-const version = "v0.0.10";
+const version = "v0.0.11";
 
 log('0xBitcoin Stats', version);
 el('#footerversion').innerHTML = version;
