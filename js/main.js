@@ -140,7 +140,6 @@ function calculateNewMiningDifficulty(current_difficulty,
 /* move fetching/storing stats into a class, even just to wrap it */
 stats = [
   /*Description                     promise which retuns, or null         units         multiplier  null: filled in later*/
-  //['',                              null,                                 "",           1,          null     ], /* mining difficulty */
   ['Mining Difficulty',             token.getMiningDifficulty,            "",           1,          null     ], /* mining difficulty */
   ['Estimated Hashrate',            null,                                 "Mh/s",       1,          null     ], /* mining difficulty */
   ['Rewards Until Readjustment',    null,                                 "",           1,          null     ], /* mining difficulty */
@@ -155,17 +154,10 @@ stats = [
   ['Current Mining Reward',         token.getMiningReward,                "0xBTC",      0.00000001, null     ], /* mining */
   ['Epoch Count',                   token.epochCount,                     "",           1,          null     ], /* mining */
   ['Total Supply',                  token.totalSupply,                    "0xBTC",      0.00000001, null     ], /* supply */
-  //['Mining Target',                 token.miningTarget,                   "",           1,          null     ], /* mining */
   ['',                              null,                                 "",           1,          null     ], /* */
   ['Token Holders',                 null,                                 "holders",    1,          null     ], /* usage */
   ['Token Transfers',               null,                                 "transfers",  1,          null     ], /* usage */
   ['Total Contract Operations',     null,                                 "txs",        1,          null     ], /* usage */
-  //['',                              null,                                 "0xBTC",      0.00000001, null     ], /* */
-  //['TokenMiningPool.com Hashrate',  null,                                 "Mh/s",       1,          null     ], /* pool */
-  //['0xBrute.com Hashrate',          null,                                 "Mh/s",       1,          null     ], /* pool */
-  //['0xPool.io Hashrate',            null,                                 "Mh/s",       1,          null     ], /* pool */
-  //['gpu.PiZzA Hashrate',            null,                                 "Mh/s",       1,          null     ], /* pool */
-  //['0xBTCpool.com Hashrate',        null,                                 "Mh/s",       1,          null     ], /* pool */
 ];
 
 var latest_eth_block = null;
