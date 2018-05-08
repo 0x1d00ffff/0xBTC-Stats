@@ -11,8 +11,10 @@ const version = "v0.0.10";
 log('0xBitcoin Stats', version);
 el('#footerversion').innerHTML = version;
 
-var stats_updated_count = 0;
+
+
 /* todo: move these into some kind of contract helper class */
+const _IDEAL_BLOCK_TIME_SECONDS = 600;
 const _BLOCKS_PER_READJUSTMENT = 1024;
 const _CONTRACT_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
 const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";  // 2**234
@@ -21,10 +23,10 @@ const _MINIMUM_TARGET = 2**16;
 const _MINIMUM_TARGET_BN = new Eth.BN(_MINIMUM_TARGET);
 const _ZERO_BN = new Eth.BN(0, 10);
 
-/* these globals are written to once the values are loaded, and used by the mining calculator */
-var current_diff_saved = 0;
-var next_diff_saved = 0;
-var saved_current_block_reward = 0;
+
+
+
+
 
 /* colors used by pool names. todo: move to css, still use them for chart.js */
 var pool_colors = {
@@ -44,9 +46,9 @@ var pool_colors = {
   lime        : "#cddc39",
   brown       : "#8d6e63",
   grey        : "#78909c",
-
-
 }
+
+
 
 /* TODO: figure out why it doesn't work w metamask */
 var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"));
@@ -134,6 +136,7 @@ function calculateNewMiningDifficulty(current_difficulty,
   return parseInt(_MAXIMUM_TARGET_BN.div(new_mining_target).toString(10));
 }
 
+
 /* move fetching/storing stats into a class, even just to wrap it */
 stats = [
   /*Description                     promise which retuns, or null         units         multiplier  null: filled in later*/
@@ -168,6 +171,7 @@ stats = [
 var latest_eth_block = null;
 eth.blockNumber().then((value)=>{
   latest_eth_block = parseInt(value.toString(10), 10);
+  log('loaded latest_eth_block:', latest_eth_block);
 });
 function ethBlockNumberToDateStr(eth_block) {
   //log('converting', eth_block)
@@ -185,7 +189,7 @@ function ethBlockNumberToTimestamp(eth_block) {
 }
 
 
-
+/* convert seconds to a short readable string ("1.2 hours", "5.9 months") */
 function secondsToReadableTime(seconds) {
   if(seconds <= 0) {
     return "0 seconds";
@@ -203,6 +207,7 @@ function secondsToReadableTime(seconds) {
   return seconds.toFixed(1) + ' ' + 'seconds';
 }
 
+/* convert number to a short readable string ("244.5 K", "1.2 G") */
 function toReadableThousands(num_value, should_add_b_tags) {
   units = ['', 'K', 'M', 'B'];
   var final_unit = 'T';
@@ -227,6 +232,7 @@ function toReadableThousands(num_value, should_add_b_tags) {
   return num_value_string + ' ' + final_unit;
 }
 
+/* convert number to a readable string ("244 Thousand", "3 Billion") */
 function toReadableThousandsLong(num_value, should_add_b_tags) {
   units = ['', 'Thousand', 'Million', 'Billion'];
   var final_unit = 'Trillion';
@@ -246,6 +252,7 @@ function toReadableThousandsLong(num_value, should_add_b_tags) {
   return num_value_string + ' ' + final_unit;
 }
 
+/* convert number to a readable hashrate string ("244.32 Gh/s", "3.05 Th/s") */
 function toReadableHashrate(hashrate, should_add_b_tags) {
   units = ['H/s', 'Kh/s', 'Mh/s', 'Gh/s', 'Th/s', 'Ph/s'];
   var final_unit = 'Eh/s';
@@ -287,6 +294,7 @@ function setValueInStats(name, value, stats) {
     }});
 }
 
+/* sleep for given number of milliseconds. note: must be called with 'await' */
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -298,9 +306,6 @@ function updateStatsThatHaveDependencies(stats) {
     mining_calculator_app.setCurrentDifficulty(difficulty);
     mining_calculator_app.useCurrentDiff();
   }
-  //hashrate = difficulty * 2**22 / 600
-  //hashrate /= 1000000000
-  //el('#EstimatedHashrate').innerHTML = "<b>" + hashrate.toFixed(2) + "</b> Gh/s";
 
   /* supply remaining in era */
   max_supply_for_era = getValueFromStats('Max Supply for Current Era', stats)
@@ -334,25 +339,23 @@ function updateStatsThatHaveDependencies(stats) {
   var seconds_since_readjustment = eth_blocks_since_last_difficulty_period * 15
 
   seconds_per_reward = seconds_since_readjustment / rewards_since_readjustment;
-  minutes_per_reward = (seconds_per_reward / 60).toFixed(2)
-  el_safe('#CurrentAverageRewardTime').innerHTML = "<b>" + minutes_per_reward + "</b> minutes";
+  el_safe('#CurrentAverageRewardTime').innerHTML = "<b>" + (seconds_per_reward / 60).toFixed(2) + "</b> minutes";
   /* add a time estimate to RewardsUntilReadjustment */
-  el_safe('#RewardsUntilReadjustment').innerHTML += "  <span style='font-size:0.8em;'>(~" + secondsToReadableTime(rewards_left*minutes_per_reward*60) + ")</span>";
+  el_safe('#RewardsUntilReadjustment').innerHTML += "  <span style='font-size:0.8em;'>(~" + secondsToReadableTime(rewards_left*seconds_per_reward) + ")</span>";
 
   /* calculate next difficulty */
-  //var current_mining_target = getValueFromStats('Mining Target', stats);
-  var new_mining_target = calculateNewMiningDifficulty(difficulty,
-                                                       eth_blocks_since_last_difficulty_period,
-                                                       rewards_since_readjustment);
-  el_safe('#MiningDifficulty').innerHTML += "  <span style='font-size:0.8em;'>(next: ~" + new_mining_target.toLocaleString() + ")</span>";
+  var new_mining_difficulty = calculateNewMiningDifficulty(difficulty,
+                                                           eth_blocks_since_last_difficulty_period,
+                                                           rewards_since_readjustment);
+  el_safe('#MiningDifficulty').innerHTML += "  <span style='font-size:0.8em;'>(next: ~" + new_mining_difficulty.toLocaleString() + ")</span>";
   if(mining_calculator_app) {
-    mining_calculator_app.setNextDifficulty(new_mining_target);
+    mining_calculator_app.setNextDifficulty(new_mining_difficulty);
   }
+
   /* estimated hashrate */
-  //difficulty = getValueFromStats('Mining Difficulty', stats)
-  hashrate = difficulty * 2**22 / 600
+  hashrate = difficulty * 2**22 / _IDEAL_BLOCK_TIME_SECONDS;
   /* use current reward rate in hashrate calculation */
-  hashrate *= (10 / minutes_per_reward)
+  hashrate *= (_IDEAL_BLOCK_TIME_SECONDS / seconds_per_reward);
   setValueInStats('Estimated Hashrate', hashrate, stats);
   el_safe('#EstimatedHashrate').innerHTML = toReadableHashrate(hashrate, true);
 }
@@ -419,10 +422,7 @@ function getMinerColor(address, known_miners) {
   if(known_miners[address] !== undefined) {
     var hexcolor = known_miners[address][2];
   } else {
-    //var address_url = 'https://etherscan.io/address/' + address;
-    //var hexcolor = (simpleHash(7, address) & 0xFFFFFF) | 0x000000;
     hexcolor = 'hsl(' + (simpleHash(2, address) % 360) + ', 48%, 30%)';
-    
   }
   return hexcolor;
 }
