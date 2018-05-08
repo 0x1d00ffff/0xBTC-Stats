@@ -182,12 +182,14 @@ class contractValueOverTime {
     }
     if (this.states[this.states.length-1][1].eq(new Eth.BN(0))) {
       log('warning: got a zero value at end of dataset');
-      log('before:', this.states);
+      log('before - len', this.states.length);
+      log(this.states);
 
       /* remove one item at location length-1 (last value) */
       this.states.splice(this.states.length-1, 1);
 
-      log('after:', this.states);
+      log('after - len', this.states.length);
+      log(this.states);
     }
   }
 }
@@ -742,22 +744,17 @@ async function updateDifficultyGraph(eth, num_days, num_search_points){
   //mining_target_values.duplicateLastValueAsLatest();
 
 
-
-  // print all diff values to console TODO: remove
-  /*mining_target_values.getValues.forEach((value) => {
-    if(value[1] != undefined && !value[1].eq(_ZERO_BN)) {
-      log('block #', value[0], 'ts', value[2], 'diff:', _MAXIMUM_TARGET_BN.div(value[1]).toString(10));
-    }else{
-      log('block #', value[0], 'ts', value[2], 'value[1]:', (value[1]).toString(10));
-    }
-  });*/
-
   /* Note: we sort these down here because we need to wait until values are
      loaded before sorting. technically we should explicitly wait, but these
      should finish long before refining the mining targets */
   era_values.sortValues();
   tokens_minted_values.sortValues();
+  log('era_values:');
   era_values.printValuesToLog();
+  log('tokens_minted_values:');
+  tokens_minted_values.printValuesToLog();
+  log('mining_target_values:');
+  mining_target_values.printValuesToLog();
   era_values.deleteLastPointIfZero();
 
   generateDifficultyGraph(eth, mining_target_values, era_values, tokens_minted_values);
