@@ -50,7 +50,7 @@ class contractValueOverTime {
     /* make sure we only request integer blocks */
     eth_block_num = Math.round(eth_block_num)
 
-    log('requested', this.storage_index, '@ block', eth_block_num)
+    //log('requested', this.storage_index, '@ block', eth_block_num)
 
     var saveState = function(block_states, eth_block_num) {
       return function (value) {
@@ -373,6 +373,7 @@ function generateDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_c
 
   log('max_hashrate_value', max_hashrate_value);
   log('max_difficulty_value', max_difficulty_value);
+
 
   // var difficulty_data = []
   // for (var i = 0; i < target_values.length; i++) {
@@ -709,6 +710,11 @@ async function refine_mining_target_values(mining_target_values){
   mining_target_values.removeExtraValuesForStepChart();
 }
 
+async function show_progress(percent_value){
+  log('updating progress.. (', percent_value, '%)');
+  el('#difficultystats').innerHTML = '<div class="">Loading info from the blockchain... <span style="font-weight:600;">' + percent_value.toFixed(0) + '%</span></div>';
+}
+
 
 async function updateDifficultyGraph(eth, num_days, num_search_points){
   /*
@@ -716,18 +722,30 @@ async function updateDifficultyGraph(eth, num_days, num_search_points){
       function getMiningDifficulty() public constant returns (uint) 
         return _MAXIMUM_TARGET.div(miningTarget);
   */
+  const eth_blocks_per_day = 24*60*(60/15);
   var contract_address = '0xB6eD7644C69416d67B522e20bC294A9a9B405B31';
-  var max_blocks = num_days*24*60*(60/15);
+  var max_blocks = num_days*eth_blocks_per_day;
   var initial_search_points = num_search_points; /* in some crazy world where readjustments happen every day, this will catch all changes */
+  if (max_blocks / initial_search_points > eth_blocks_per_day) {
+    log("WARNING: search points are greater than 1 day apart. Make sure you know what you are doing...")
+  }
   var previous = 0;
   //var current_eth_block = getValueFromStats('Last Eth Block', stats);
   var current_eth_block = parseInt((await eth.blockNumber()).toString(10), 10);
+  show_progress(15);
 
-  var block_states = [];
+  //var block_states = [];
 
   // var a = await eth.getStorageAt('0xB6eD7644C69416d67B522e20bC294A9a9B405B31', new Eth.BN('20', 10), 'latest');
   // var b = await eth.getStorageAt('0xB6eD7644C69416d67B522e20bC294A9a9B405B31', new Eth.BN('20', 10), 'earliest');
   // console.log(a, b);
+
+  // 'lastDifficultyPeriodStarted' is at location 6
+  // NOTE: it is important to make sure the step size is small enough to
+  //       capture all difficulty changes. For 0xBTC once/day is more than
+  //       enough.
+  var last_diff_start_blocks = new contractValueOverTime(eth, contract_address, '6');
+  last_diff_start_blocks.addValuesInRange((current_eth_block-max_blocks), current_eth_block, initial_search_points);
 
   // 'reward era' is at location 7
   var era_values = new contractValueOverTime(eth, contract_address, '7');
@@ -736,29 +754,62 @@ async function updateDifficultyGraph(eth, num_days, num_search_points){
   // 'tokens minted' is at location 20
   var tokens_minted_values = new contractValueOverTime(eth, contract_address, '20');
   tokens_minted_values.addValuesInRange((current_eth_block-max_blocks), current_eth_block, initial_search_points);
+  show_progress(30);
+
+  await last_diff_start_blocks.waitUntilLoaded();
+  show_progress(45);
+
+  /* this operation removes removes duplicate values, diff_start_block_valueskeeping only the first */
+  last_diff_start_blocks.removeExtraValuesForStepChart();
 
   // 'mining target' is at location 11
+  // Load 'mining target' at each eth block that indicated by the set of
+  // latestDifficultyPeriodStarted values
+  let diff_start_block_values = last_diff_start_blocks.getValues;
+  log('diff_start_block_values:', diff_start_block_values);
   var mining_target_values = new contractValueOverTime(eth, contract_address, '11');
-  mining_target_values.addValuesInRange((current_eth_block-max_blocks), current_eth_block, initial_search_points);
-  await refine_mining_target_values(mining_target_values);
+  for (var i in diff_start_block_values) {
+    let block_num = diff_start_block_values[i][1].toString(10);
+    mining_target_values.addValueAtEthBlock(block_num);
+  }
+  mining_target_values.addValueAtEthBlock(current_eth_block);
+
+  show_progress(60);
+
+  // wait on all pending eth log requests to finish
+  log('waiting for all values to load...');
+  await mining_target_values.waitUntilLoaded()
+  await tokens_minted_values.waitUntilLoaded()
+  await era_values.waitUntilLoaded()
+
+  show_progress(75);
+
+  mining_target_values.sortValues();
+  //mining_target_values.deduplicate();
   //mining_target_values.duplicateLastValueAsLatest();
 
+  // OLD IMPLEMENTATION 'mining target' is at location 11
+  //var mining_target_values = new contractValueOverTime(eth, contract_address, '11');
+  //mining_target_values.addValuesInRange((current_eth_block-max_blocks), current_eth_block, initial_search_points);
+  //await refine_mining_target_values(mining_target_values);
 
   /* Note: we sort these down here because we need to wait until values are
      loaded before sorting. technically we should explicitly wait, but these
      should finish long before refining the mining targets */
   era_values.sortValues();
   tokens_minted_values.sortValues();
-  log('era_values:');
-  era_values.printValuesToLog();
-  log('tokens_minted_values:');
-  tokens_minted_values.printValuesToLog();
-  log('mining_target_values:');
-  mining_target_values.printValuesToLog();
+  //log('era_values:');
+  //era_values.printValuesToLog();
+  //log('tokens_minted_values:');
+  //tokens_minted_values.printValuesToLog();
+  //log('mining_target_values:');
+  //mining_target_values.printValuesToLog();
+  
+  // TODO: remove this when we are sure it is fixed
   era_values.deleteLastPointIfZero();
 
+  show_progress(90);
   generateDifficultyGraph(eth, mining_target_values, era_values, tokens_minted_values);
-
 }
 
 function updateGraphData(history_days, num_search_points) {
