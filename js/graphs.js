@@ -34,8 +34,44 @@ class contractValueOverTime {
   addValuesInRange(start_block_num, end_block_num, query_count) {
     var stepsize = (end_block_num-start_block_num) / query_count;
 
+    //log('stepsize', stepsize);
+
     for (var count = 0; count < query_count; count += 1) {
       this.addValueAtEthBlock(end_block_num - (stepsize*count));
+    }
+  }
+
+  _saveState(block_states, eth_block_num) {
+    let cv_obj = this;
+
+    return async function (value) {
+      /* TODO: probably a way to convert w/o going through hex_str */
+
+      /* for some reason, this is how infura 'fails' to fetch a value */
+      /* TODO: only re-try a certain number of times */
+      if (value == '0x') {
+        log('block', eth_block_num, ': got a bad value ("0x"), retrying...');
+        await sleep(1000);
+        cv_obj.addValueAtEthBlock(eth_block_num);
+        return;
+      }
+      var hex_str = value.substr(2, 64);
+      var value_bn = new Eth.BN(hex_str, 16)
+
+      //log('  got value', value, hex_str, '@ block', eth_block_num)
+
+      /* [block num, value @ block num, timestamp of block num] */
+      var len = block_states.push([eth_block_num, value_bn, '']);
+
+      // function setValue(save_fn) {
+      //   return function(value) {
+      //     save_fn(value);
+      //   }
+      // }
+
+      /* TODO: uncomment this to use timestamps embedded in block */
+      // eth.getBlockByNumber(eth_block_num, true).then(setValue((value)=>{block_states[len-1][2]=value.timestamp.toString(10)}))
+
     }
   }
   addValueAtEthBlock(eth_block_num) {
@@ -52,38 +88,13 @@ class contractValueOverTime {
 
     //log('requested', this.storage_index, '@ block', eth_block_num)
 
-    var saveState = function(block_states, eth_block_num) {
-      return function (value) {
-        /* TODO: probably a way to convert w/o going through hex_str */
-        //log('value:', value)
-        var hex_str = value.substr(2, 64);
-        var value_bn = new Eth.BN(hex_str, 16)
-        // var difficulty = max_target.div(value_bn)
-
-        // console.log("Block #", eth_block_num, ":", value);
-        // log("Block #", eth_block_num, ":", difficulty.toString(10));
-
-        /* [block num, value @ block num, timestamp of block num] */
-        var len = block_states.push([eth_block_num, value_bn, '']);
-
-        function setValue(save_fn) {
-          return function(value) {
-            save_fn(value);
-          }
-        }
-
-        /* TODO: uncomment this to use timestamps embedded in block */
-        // eth.getBlockByNumber(eth_block_num, true).then(setValue((value)=>{block_states[len-1][2]=value.timestamp.toString(10)}))
-
-      }
-    }
     this.eth.getStorageAt(this.contract_address, 
                           new Eth.BN(this.storage_index, 10),
                           eth_block_num.toString(10))
     .then(
-      saveState(this.states, eth_block_num)
+      this._saveState(this.states, eth_block_num)
     ).catch((error) => {
-      log('error reading block storage:', error);
+      log('error reading block storage:', error)
     });
   }
   areAllValuesLoaded() {
@@ -740,20 +751,23 @@ async function updateDifficultyGraph(eth, num_days, num_search_points){
   // var b = await eth.getStorageAt('0xB6eD7644C69416d67B522e20bC294A9a9B405B31', new Eth.BN('20', 10), 'earliest');
   // console.log(a, b);
 
+  let start_eth_block = (current_eth_block-max_blocks);
+  let end_eth_block = current_eth_block-4
+
   // 'lastDifficultyPeriodStarted' is at location 6
   // NOTE: it is important to make sure the step size is small enough to
   //       capture all difficulty changes. For 0xBTC once/day is more than
   //       enough.
   var last_diff_start_blocks = new contractValueOverTime(eth, contract_address, '6');
-  last_diff_start_blocks.addValuesInRange((current_eth_block-max_blocks), current_eth_block, initial_search_points);
+  last_diff_start_blocks.addValuesInRange(start_eth_block, end_eth_block, initial_search_points);
 
   // 'reward era' is at location 7
   var era_values = new contractValueOverTime(eth, contract_address, '7');
-  era_values.addValuesInRange((current_eth_block-max_blocks), current_eth_block, initial_search_points);
+  era_values.addValuesInRange(start_eth_block, end_eth_block, initial_search_points);
 
   // 'tokens minted' is at location 20
   var tokens_minted_values = new contractValueOverTime(eth, contract_address, '20');
-  tokens_minted_values.addValuesInRange((current_eth_block-max_blocks), current_eth_block, initial_search_points);
+  tokens_minted_values.addValuesInRange(start_eth_block, end_eth_block, initial_search_points);
   show_progress(30);
 
   await last_diff_start_blocks.waitUntilLoaded();
