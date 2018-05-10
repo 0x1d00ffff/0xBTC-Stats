@@ -1,11 +1,39 @@
 
 class mineableToken {
   constructor(eth, contract_address) {
-    this.eth = eth;
-    this.contract_address = contract_address;
+    this._eth = eth;
+    this._contract_address = contract_address;
+    this._token = eth.contract(tokenABI).at(contract_address);
   }
   get getValues() {
     return this.states;
+  }
+  get getDifficulty() {
+    return this._difficulty;
+  }
+  get getLatestDifficultyPeriodStarted() {
+    return this._latestDifficultyPeriodStarted;
+  }
+  get getTokensMinted() {
+    return this._tokensMinted;
+  }
+  get getMaxSupplyForEra() {
+    return this._maxSupplyForEra;
+  }
+  get getLastRewardEthBlockNumber() {
+    return this._lastRewardEthBlockNumber;
+  }
+  get getRewardEra() {
+    return this._rewardEra;
+  }
+  get getMiningReward() {
+    return this._getMiningReward;
+  }
+  get getEpochCount() {
+    return this._epochCount;
+  }
+  get getTotalSupply() {
+    return this._totalSupply;
   }
   printValuesToLog() {
     this.states.forEach((value) => {
