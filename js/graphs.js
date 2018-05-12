@@ -742,6 +742,8 @@ async function updateDifficultyGraph(eth, num_days, num_search_points){
     log("WARNING: search points are greater than 1 day apart. Make sure you know what you are doing...")
   }
   var previous = 0;
+
+  show_progress(0);
   //var current_eth_block = getValueFromStats('Last Eth Block', stats);
   var current_eth_block = parseInt((await eth.blockNumber()).toString(10), 10);
   show_progress(15);
@@ -787,7 +789,7 @@ async function updateDifficultyGraph(eth, num_days, num_search_points){
     let block_num = diff_start_block_values[i][1].toString(10);
     mining_target_values.addValueAtEthBlock(block_num);
   }
-  mining_target_values.addValueAtEthBlock(current_eth_block);
+  mining_target_values.addValueAtEthBlock(end_eth_block);
 
   show_progress(60);
 
