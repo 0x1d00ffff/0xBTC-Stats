@@ -666,7 +666,8 @@ function generateDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_c
             },
             ticks: {
               min: 0,
-              max: 20,
+              //max: 20,
+              suggestedMax: 20,
               callback: function(value, index, values) {
                 //return value.toFixed(0) + " Minutes";  // correct but looks redundant
                 return value.toFixed(0);
