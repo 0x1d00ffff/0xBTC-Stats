@@ -12,19 +12,23 @@ log('0xBitcoin Stats', version);
 el('#footerversion').innerHTML = version;
 
 
-
-/* todo: move these into some kind of contract helper class */
-const _IDEAL_BLOCK_TIME_SECONDS = 600;
-const _BLOCKS_PER_READJUSTMENT = 1024;
-const _CONTRACT_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
-const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";  // 2**234
-const _MAXIMUM_TARGET_BN = new Eth.BN(_MAXIMUM_TARGET_STR, 10);
-const _MINIMUM_TARGET = 2**16;
-const _MINIMUM_TARGET_BN = new Eth.BN(_MINIMUM_TARGET);
+/* intrinsic values */
+const _SECONDS_PER_ETH_BLOCK = 15;
 const _ZERO_BN = new Eth.BN(0, 10);
 
-
-
+/* contract constants */
+/* todo: pull these from the contract */
+/* todo: move these into some kind of contract helper class */
+const _BLOCKS_PER_READJUSTMENT = 1024;
+const _CONTRACT_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
+const _MINT_TOPIC = "0xcf6fbb9dcea7d07263ab4f5c3a92f53af33dffc421d9d121e1c74b307e68189d";
+const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";  // 2**234
+const _MINIMUM_TARGET = 2**16;
+const _ETH_BLOCKS_PER_REWARD = 60;
+/* calculated contract values */
+const _MAXIMUM_TARGET_BN = new Eth.BN(_MAXIMUM_TARGET_STR, 10);
+const _MINIMUM_TARGET_BN = new Eth.BN(_MINIMUM_TARGET);
+const _IDEAL_BLOCK_TIME_SECONDS = _ETH_BLOCKS_PER_REWARD * _SECONDS_PER_ETH_BLOCK;
 
 
 
@@ -179,14 +183,14 @@ function ethBlockNumberToDateStr(eth_block) {
   //log('latest e', latest_eth_block)
   /* TODO: use web3 instead, its probably more accurate */
   /* blockDate = new Date(web3.eth.get bBlock(startBlock-i+1).timestamp*1000); */
-  return new Date(Date.now() - ((latest_eth_block - eth_block)*15*1000)).toLocaleDateString()
+  return new Date(Date.now() - ((latest_eth_block - eth_block)*_SECONDS_PER_ETH_BLOCK*1000)).toLocaleDateString()
 }
 function ethBlockNumberToTimestamp(eth_block) {
   //log('converting', eth_block)
   //log('latest e', latest_eth_block)
   /* TODO: use web3 instead, its probably more accurate */
   /* blockDate = new Date(web3.eth.getBlock(startBlock-i+1).timestamp*1000); */
-  return new Date(Date.now() - ((latest_eth_block - eth_block)*15*1000)).toLocaleString()
+  return new Date(Date.now() - ((latest_eth_block - eth_block)*_SECONDS_PER_ETH_BLOCK*1000)).toLocaleString()
 }
 
 
@@ -320,7 +324,7 @@ function updateStatsThatHaveDependencies(stats) {
   el_safe('#SupplyRemaininginEra').innerHTML = "<b>" + supply_remaining_in_era.toLocaleString() + "</b> 0xBTC <span style='font-size:0.8em;'>(" + rewards_blocks_remaining_in_era + " blocks)</span>";
 
   /* time until next epoch ('halvening') */
-  el_safe('#CurrentRewardEra').innerHTML += " <span style='font-size:0.8em;'>(next era: ~" + secondsToReadableTime(rewards_blocks_remaining_in_era * 600) + ")</div>";
+  el_safe('#CurrentRewardEra').innerHTML += " <span style='font-size:0.8em;'>(next era: ~" + secondsToReadableTime(rewards_blocks_remaining_in_era * _IDEAL_BLOCK_TIME_SECONDS) + ")</div>";
 
   /* rewards until next readjustment */
   epoch_count = getValueFromStats('Epoch Count', stats)
@@ -337,7 +341,7 @@ function updateStatsThatHaveDependencies(stats) {
 
   /* time calculated using 15-second eth blocks */
   var eth_blocks_since_last_difficulty_period = current_eth_block - difficulty_start_eth_block;
-  var seconds_since_readjustment = eth_blocks_since_last_difficulty_period * 15
+  var seconds_since_readjustment = eth_blocks_since_last_difficulty_period * _SECONDS_PER_ETH_BLOCK
 
   seconds_per_reward = seconds_since_readjustment / rewards_since_readjustment;
   el_safe('#CurrentAverageRewardTime').innerHTML = "<b>" + (seconds_per_reward / 60).toFixed(2) + "</b> minutes";
@@ -354,6 +358,7 @@ function updateStatsThatHaveDependencies(stats) {
   }
 
   /* estimated hashrate */
+  /* TODO: calculate this equation from max_target (https://en.bitcoin.it/wiki/Difficulty) */
   hashrate = difficulty * 2**22 / _IDEAL_BLOCK_TIME_SECONDS;
   /* use current reward rate in hashrate calculation */
   hashrate *= (_IDEAL_BLOCK_TIME_SECONDS / seconds_per_reward);
@@ -369,13 +374,13 @@ function updateLastUpdatedTime() {
 
 function updateThirdPartyAPIs() {
   /* ethplorer token info */
-  $.getJSON('https://api.ethplorer.io/getTokenInfo/0xb6ed7644c69416d67b522e20bc294a9a9b405b31?apiKey=freekey',
+  $.getJSON('https://api.ethplorer.io/getTokenInfo/' + _CONTRACT_ADDRESS + '?apiKey=freekey',
     function(data) {
       el('#TokenHolders').innerHTML = "<b>" + data["holdersCount"] + "</b> holders";
       el('#TokenTransfers').innerHTML = "<b>" + data["transfersCount"] + "</b> transfers";
   });
   /* ethplorer contract address info */
-  $.getJSON('https://api.ethplorer.io/getAddressInfo/0xb6ed7644c69416d67b522e20bc294a9a9b405b31?apiKey=freekey',
+  $.getJSON('https://api.ethplorer.io/getAddressInfo/' + _CONTRACT_ADDRESS + '?apiKey=freekey',
     function(data) {
       el('#TotalContractOperations').innerHTML = "<b>" + data["countTxs"] + "</b> txs";
   });
@@ -488,8 +493,8 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
   eth.getLogs({
     fromBlock: last_reward_eth_block - num_eth_blocks_to_search,
     toBlock: last_reward_eth_block,
-    address: '0xB6eD7644C69416d67B522e20bC294A9a9B405B31',
-    topics: ['0xcf6fbb9dcea7d07263ab4f5c3a92f53af33dffc421d9d121e1c74b307e68189d', null],
+    address: _CONTRACT_ADDRESS,
+    topics: [_MINT_TOPIC, null],
   })
   .then((result) => {
     /* array of all miner addresses */
@@ -606,12 +611,12 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
 
     var blocks_since_last_reward = current_eth_block - last_reward_eth_block;
     var date_now = new Date();
-    var date_of_last_mint = new Date(date_now.getTime() - blocks_since_last_reward*15*1000)
+    var date_of_last_mint = new Date(date_now.getTime() - blocks_since_last_reward*_SECONDS_PER_ETH_BLOCK*1000)
 
     function get_date_from_eth_block(eth_block) {
       /* TODO: use web3 instead, its probably more accurate */
       /* blockDate = new Date(web3.eth.getBlock(startBlock-i+1).timestamp*1000); */
-      return new Date(date_of_last_mint.getTime() - ((last_reward_eth_block - eth_block)*15*1000)).toLocaleString()
+      return new Date(date_of_last_mint.getTime() - ((last_reward_eth_block - eth_block)*_SECONDS_PER_ETH_BLOCK*1000)).toLocaleString()
     }
 
     /* fill in block info */

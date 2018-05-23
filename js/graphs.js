@@ -313,7 +313,7 @@ function generateDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_c
 
 
 
-      var unadjusted_network_hashrate = difficulty * 2**22 / 600;
+      var unadjusted_network_hashrate = difficulty * 2**22 / _IDEAL_BLOCK_TIME_SECONDS;
 
       var network_hashrate = unadjusted_network_hashrate * (current_eras_per_block/expected_eras_per_block);
 
@@ -369,8 +369,8 @@ function generateDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_c
   log('max_hashrate_value', max_hashrate_value);
   log('max_difficulty_value', max_difficulty_value);
 
-  var hashrate_based_on_difficulty = max_difficulty_value * 2**22 / 600;
-  var difficulty_based_on_hashrate = max_hashrate_value / ((2**22) / 600);
+  var hashrate_based_on_difficulty = max_difficulty_value * 2**22 / _IDEAL_BLOCK_TIME_SECONDS;
+  var difficulty_based_on_hashrate = max_hashrate_value / ((2**22) / _IDEAL_BLOCK_TIME_SECONDS);
 
   log('hashrate_based_on_difficulty', hashrate_based_on_difficulty);
   log('difficulty_based_on_hashrate', difficulty_based_on_hashrate);
@@ -556,9 +556,9 @@ function generateDifficultyGraph(eth, target_cv_obj, era_cv_obj, tokens_minted_c
   /* make a copy of each array element so we don't modify 'real' data later */
   datasetCopy[0] = Object.assign({}, datasetCopy[0]);
   datasetCopy[1] = Object.assign({}, datasetCopy[1]);
-  /* set y-values to 10-minutes */
-  datasetCopy[0].y = 10;
-  datasetCopy[1].y = 10;
+  /* set y-values to ideal block time */
+  datasetCopy[0].y = _IDEAL_BLOCK_TIME_SECONDS / 60;
+  datasetCopy[1].y = _IDEAL_BLOCK_TIME_SECONDS / 60;
   //console.log('datasetCopy', datasetCopy);
 
   /* block time chart */
@@ -734,8 +734,7 @@ async function updateDifficultyGraph(eth, num_days, num_search_points){
       function getMiningDifficulty() public constant returns (uint) 
         return _MAXIMUM_TARGET.div(miningTarget);
   */
-  const eth_blocks_per_day = 24*60*(60/15);
-  var contract_address = '0xB6eD7644C69416d67B522e20bC294A9a9B405B31';
+  const eth_blocks_per_day = 24*60*(60/_SECONDS_PER_ETH_BLOCK);
   var max_blocks = num_days*eth_blocks_per_day;
   var initial_search_points = num_search_points; /* in some crazy world where readjustments happen every day, this will catch all changes */
   if (max_blocks / initial_search_points > eth_blocks_per_day) {
@@ -761,15 +760,15 @@ async function updateDifficultyGraph(eth, num_days, num_search_points){
   // NOTE: it is important to make sure the step size is small enough to
   //       capture all difficulty changes. For 0xBTC once/day is more than
   //       enough.
-  var last_diff_start_blocks = new contractValueOverTime(eth, contract_address, '6');
+  var last_diff_start_blocks = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '6');
   last_diff_start_blocks.addValuesInRange(start_eth_block, end_eth_block, initial_search_points);
 
   // 'reward era' is at location 7
-  var era_values = new contractValueOverTime(eth, contract_address, '7');
+  var era_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '7');
   era_values.addValuesInRange(start_eth_block, end_eth_block, initial_search_points);
 
   // 'tokens minted' is at location 20
-  var tokens_minted_values = new contractValueOverTime(eth, contract_address, '20');
+  var tokens_minted_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '20');
   tokens_minted_values.addValuesInRange(start_eth_block, end_eth_block, initial_search_points);
   show_progress(30);
 
@@ -784,7 +783,7 @@ async function updateDifficultyGraph(eth, num_days, num_search_points){
   // latestDifficultyPeriodStarted values
   let diff_start_block_values = last_diff_start_blocks.getValues;
   log('diff_start_block_values:', diff_start_block_values);
-  var mining_target_values = new contractValueOverTime(eth, contract_address, '11');
+  var mining_target_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '11');
   for (var i in diff_start_block_values) {
     let block_num = diff_start_block_values[i][1].toString(10);
     mining_target_values.addValueAtEthBlock(block_num);
@@ -806,7 +805,7 @@ async function updateDifficultyGraph(eth, num_days, num_search_points){
   //mining_target_values.duplicateLastValueAsLatest();
 
   // OLD IMPLEMENTATION 'mining target' is at location 11
-  //var mining_target_values = new contractValueOverTime(eth, contract_address, '11');
+  //var mining_target_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '11');
   //mining_target_values.addValuesInRange((current_eth_block-max_blocks), current_eth_block, initial_search_points);
   //await refine_mining_target_values(mining_target_values);
 
