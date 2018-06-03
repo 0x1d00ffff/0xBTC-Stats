@@ -7,12 +7,12 @@ body {
     color: #f2f2f2;
 }
 /*
-img.top-logo { 
-  opacity: 0.7; 
-} 
+img.top-logo {
+  opacity: 0.7;
+}
 
-img.top-logo:hover { 
-  opacity: 1; 
+img.top-logo:hover {
+  opacity: 1;
 }
 */
 .navigation .title, .navigation-title {
@@ -105,8 +105,9 @@ blockquote {
 .poolcolor-yellow { background-color: #997500 }
 .poolcolor-darkpurple { background-color: #662354 }
 .poolcolor-darkred {background-color: hsl(356, 48%, 30%)}
-.poolcolor-slate {background-color: "#34495e" }
+.poolcolor-slate {background-color: #34495e }
 .poolcolor-brightred {background-color: #C62828}
+.poolcolor-royal {background-color: #0070bc }
 
 .poolcolor-red {background-color: #f44336 } /* unused */
 .poolcolor-pink {background-color: #e91e63} /* unused */

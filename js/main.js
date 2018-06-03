@@ -45,6 +45,7 @@ var pool_colors = {
   red         : "#f44336",
   slate       : "#34495e",
   brightred   : "#C62828",
+  royal       : "#0070bc",
 
   /* colors below here are not assigned yet */
   pink        : "#e91e63",
@@ -93,7 +94,7 @@ function goToURLAnchor() {
 }
 
 
-function calculateNewMiningDifficulty(current_difficulty, 
+function calculateNewMiningDifficulty(current_difficulty,
                                       eth_blocks_since_last_difficulty_period,
                                       epochs_mined) {
   var current_mining_target = _MAXIMUM_TARGET_BN.div(new Eth.BN(current_difficulty));
@@ -111,7 +112,7 @@ function calculateNewMiningDifficulty(current_difficulty,
     var excess_block_pct = (target_eth_blocks_since_last_difficulty_period.mul(new Eth.BN(100))).div( eth_blocks_since_last_difficulty_period );
     var excess_block_pct_extra = excess_block_pct.sub(new Eth.BN(100));
     if (excess_block_pct_extra.gt(new Eth.BN(1000))) {
-      excess_block_pct_extra = new Eth.BN(1000); 
+      excess_block_pct_extra = new Eth.BN(1000);
     }
     // If there were 5% more blocks mined than expected then this is 5.  If there were 100% more blocks mined than expected then this is 100.
     //make it harder
@@ -472,7 +473,11 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
     "0xd4ddfd51956c19f624e948abc8619e56e5dc3958" : [ "0xMiningPool",      "http://0xminingpool.com/",       pool_colors.teal ],
     "0x88c2952c9e9c56e8402d1b6ce6ab986747336b30" : [ "0xbtc.wolfpool.io", "http://wolfpool.io/",            pool_colors.red ],
     "0x540d752a388b4fc1c9deeb1cd3716a2b7875d8a6" : [ "tosti.ro",          "http://tosti.ro/",               pool_colors.slate ],
+<<<<<<< HEAD
     "0xbbdf0402e51d12950bd8bbd50a25ed1aba5615ef" : [ "ExtremeHash",       "http://0xbtc.extremehash.io/",   pool_colors.brightred ],
+=======
+    "0x7d28994733e6dbb93fc285c01d1639e3203b54e4" : [ "Wutime.com",        "http://wutime.com/",             pool_colors.royal ],
+>>>>>>> 4c6510b91500fc389bacfdc7352477630b56f7a6
     "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
     "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
     "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
