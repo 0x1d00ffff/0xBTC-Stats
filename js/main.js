@@ -253,7 +253,11 @@ function toReadableThousandsLong(num_value, should_add_b_tags) {
       num_value /= 1000;
     }
   }
-  var num_value_string = num_value.toFixed(0);
+  if(num_value < 10) {
+    var num_value_string = num_value.toFixed(1); 
+  } else {
+    var num_value_string = num_value.toFixed(0); 
+  }
   if(should_add_b_tags) {
     num_value_string = '<b>' + num_value_string + '</b>';
   }
