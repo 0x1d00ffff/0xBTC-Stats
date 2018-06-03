@@ -106,6 +106,7 @@ blockquote {
 .poolcolor-darkpurple { background-color: #662354 }
 .poolcolor-darkred {background-color: hsl(356, 48%, 30%)}
 .poolcolor-slate {background-color: "#34495e" }
+.poolcolor-brightred {background-color: #C62828}
 
 .poolcolor-red {background-color: #f44336 } /* unused */
 .poolcolor-pink {background-color: #e91e63} /* unused */
@@ -114,6 +115,3 @@ blockquote {
 .poolcolor-lime {background-color: #cddc39} /* unused */
 .poolcolor-brown {background-color: #8d6e63} /* unused */
 .poolcolor-grey {background-color: #78909c} /* unused */
-
-
-
