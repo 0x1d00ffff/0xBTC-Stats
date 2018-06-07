@@ -11,6 +11,8 @@ Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d0
  - switch over completely to Vue
  - on difficulty/hashrate graph, trim difficulty dataset to match start date of
    the hashrate dataset
+ - add an 'age' column to the pools table
+ - add top holders pie chart
  - ~~use lastDifficultyPeriodStarted to find/iterate over difficulty changes~~
  - ~~modify hexcolor algo to pick a random hue, leaving saturation/value constant~~
  - ~~colorize the miner names in the 'block distribution' table~~

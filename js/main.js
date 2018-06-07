@@ -47,12 +47,12 @@ var pool_colors = {
   brightred   : "#C62828",
   royal       : "#0070bc",
   pink        : "#EC407A",
+  grey        : "#78909c",
 
   /* colors below here are not assigned yet */
   lightpurple : "#9c27b0",
   lime        : "#cddc39",
   brown       : "#8d6e63",
-  grey        : "#78909c",
 }
 
 
@@ -481,6 +481,7 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
     "0x7d28994733e6dbb93fc285c01d1639e3203b54e4" : [ "Wutime.com",        "http://wutime.com/",             pool_colors.royal ],
     "0x02e03db268488716c161721663501014fa031250" : [ "xb.veo.network",    "https://xb.veo.network:2096/",   pool_colors.pink ],
     "0xbf39de3c506f1e809b4e10e00dd22eb331abf334" : [ "xb.veo.network",    "https://xb.veo.network:2096/",   pool_colors.pink ],
+    "0x5404bd6b428bb8e326880849a61f0e7443ef5381" : [ "666pool",           "http://0xbtc.666pool.cn/",       pool_colors.grey ],
     "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
     "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
     "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],

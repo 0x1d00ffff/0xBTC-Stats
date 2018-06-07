@@ -105,14 +105,14 @@ blockquote {
 .poolcolor-yellow { background-color: #997500 }
 .poolcolor-darkpurple { background-color: #662354 }
 .poolcolor-darkred {background-color: hsl(356, 48%, 30%)}
+.poolcolor-red {background-color: #f44336 }
 .poolcolor-slate {background-color: #34495e }
 .poolcolor-brightred {background-color: #C62828}
 .poolcolor-royal {background-color: #0070bc }
+.poolcolor-pink {background-color: #EC407A}
+.poolcolor-grey {background-color: #78909c}
 
-.poolcolor-red {background-color: #f44336 } /* unused */
-.poolcolor-pink {background-color: #e91e63} /* unused */
 .poolcolor-lightpurple {background-color: #9c27b0} /* unused */
 .poolcolor-teal {background-color: #009688} /* unused */
 .poolcolor-lime {background-color: #cddc39} /* unused */
 .poolcolor-brown {background-color: #8d6e63} /* unused */
-.poolcolor-grey {background-color: #78909c} /* unused */
