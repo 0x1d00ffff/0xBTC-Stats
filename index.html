@@ -319,21 +319,8 @@ Attributions:
     <script type="text/javascript" src="js/mining-calculator.js"></script>
 
     <script type="text/javascript">
-      try {
-        $(document).ready(function() {
-           log("DOMready");
-          /* initialize tipr tooltips */
-          $('.tip').tipr({
-              'speed': 800,
-              //'mode': 'above',
-              //'space': 500
-          });
-        });
-      } catch (err) {
-        log('failed to set DOMready fn. Jquery load error?');
-        el('#statistics').innerHTML = "Sorry, failed to load jquery. Try again later.";
-        fail;
-      } finally {
+
+      function initPage() {
         let searchParams = new URLSearchParams(window.location.search)
 
         if(searchParams.has('reload')) {
@@ -342,6 +329,25 @@ Attributions:
             location.reload()
           },time*60000)
         }
+
+
+        /* hack; need to add to UI */
+        if(searchParams.has('downloadCsvHours')) {
+          var hours = searchParams.get('downloadCsvHours');
+          loadAllStats(stats);
+
+          function loadCSVWhenReady() {
+            if(areAllBlockchainStatsLoaded(stats)) {
+              getMinerInfoCSV(eth, stats, hours);
+            } else {
+              setTimeout(()=>{ loadCSVWhenReady() }, 100);
+            }
+          }
+
+          setTimeout(()=>{ loadCSVWhenReady() }, 0);
+          return;
+        }
+        /* end hack; need to add to UI */
 
         if(!searchParams.has('page')
           || searchParams.get('page') == 'stats') {
@@ -376,6 +382,24 @@ Attributions:
           updateGraphData(days, points);
         }
         updateLastUpdatedTime();
+      }
+
+      try {
+        $(document).ready(function() {
+           log("DOMready");
+          /* initialize tipr tooltips */
+          $('.tip').tipr({
+              'speed': 800,
+              //'mode': 'above',
+              //'space': 500
+          });
+        });
+      } catch (err) {
+        log('failed to set DOMready fn. Jquery load error?');
+        el('#statistics').innerHTML = "Sorry, failed to load jquery. Try again later.";
+        fail;
+      } finally {
+        initPage();
       }
     </script>
   </body>
