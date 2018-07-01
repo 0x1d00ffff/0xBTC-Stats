@@ -12,6 +12,20 @@ Attributions:
 <html>
   <head>
     <meta charset='utf-8'>
+
+    <!-- favicon metadata - generated with https://realfavicongenerator.net -->
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+    <link rel="manifest" href="icons/site.webmanifest">
+    <link rel="mask-icon" href="icons/safari-pinned-tab.svg" color="#ff8024">
+    <link rel="shortcut icon" href="icons/favicon.ico">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="msapplication-config" content="icons/browserconfig.xml">
+    <meta name="theme-color" content="#ff8024">
+    <!-- end favicon metadata -->
+
+
     <!-- jquery is here because scripts need it early on. may want to move other js imports here. -->
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <!-- jqMath allows for real equation formatting -->
@@ -19,7 +33,7 @@ Attributions:
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue"></script>
     <!-- note: lodash is only used for _.debounce() -->
-    <script src="https://unpkg.com/lodash@4.16.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.10/lodash.min.js"></script>
     <script src="js/tipr.min.js"></script>
 
 
@@ -36,6 +50,8 @@ Attributions:
 
     <title>0xBitcoin Statistics</title>
     <meta name="descripton" content="Live statistics for 0xBitcoin - the mined bitcoin-like token for Ethereum.">
+    <meta name="viewport" content="width=600">
+
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-117165354-1"></script>
     <script type="text/javascript" src="js/gtag.js"></script>
@@ -305,21 +321,8 @@ Attributions:
     <script type="text/javascript" src="js/mining-calculator.js"></script>
 
     <script type="text/javascript">
-      try {
-        $(document).ready(function() {
-           log("DOMready");
-          /* initialize tipr tooltips */
-          $('.tip').tipr({
-              'speed': 800,
-              //'mode': 'above',
-              //'space': 500
-          });
-        });
-      } catch (err) {
-        log('failed to set DOMready fn. Jquery load error?');
-        el('#statistics').innerHTML = "Sorry, failed to load jquery. Try again later.";
-        fail;
-      } finally {
+
+      function initPage() {
         let searchParams = new URLSearchParams(window.location.search)
 
         if(searchParams.has('reload')) {
@@ -328,6 +331,25 @@ Attributions:
             location.reload()
           },time*60000)
         }
+
+
+        /* hack; need to add to UI */
+        if(searchParams.has('downloadCsvHours')) {
+          var hours = searchParams.get('downloadCsvHours');
+          loadAllStats(stats);
+
+          function loadCSVWhenReady() {
+            if(areAllBlockchainStatsLoaded(stats)) {
+              getMinerInfoCSV(eth, stats, hours);
+            } else {
+              setTimeout(()=>{ loadCSVWhenReady() }, 100);
+            }
+          }
+
+          setTimeout(()=>{ loadCSVWhenReady() }, 0);
+          return;
+        }
+        /* end hack; need to add to UI */
 
         if(!searchParams.has('page')
           || searchParams.get('page') == 'stats') {
@@ -362,6 +384,24 @@ Attributions:
           updateGraphData(days, points);
         }
         updateLastUpdatedTime();
+      }
+
+      try {
+        $(document).ready(function() {
+           log("DOMready");
+          /* initialize tipr tooltips */
+          $('.tip').tipr({
+              'speed': 800,
+              //'mode': 'above',
+              //'space': 500
+          });
+        });
+      } catch (err) {
+        log('failed to set DOMready fn. Jquery load error?');
+        el('#statistics').innerHTML = "Sorry, failed to load jquery. Try again later.";
+        fail;
+      } finally {
+        initPage();
       }
     </script>
   </body>

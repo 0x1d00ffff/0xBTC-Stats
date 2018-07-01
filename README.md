@@ -4,12 +4,16 @@ Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d0
 
 #### TODO
 
- - use lastDifficultyPeriodStarted to find/iterate over difficulty changes 
  - add selectors to change graph window size (30 days, 60 days) and resolution
  - move more of the static html (table header rows etc) from js into .html files
  - add a set of useful links to the footer of the site
  - add btc/0xbtc price graph
  - switch over completely to Vue
+ - on difficulty/hashrate graph, trim difficulty dataset to match start date of
+   the hashrate dataset
+ - add an 'age' column to the pools table
+ - add top holders pie chart
+ - ~~use lastDifficultyPeriodStarted to find/iterate over difficulty changes~~
  - ~~modify hexcolor algo to pick a random hue, leaving saturation/value constant~~
  - ~~colorize the miner names in the 'block distribution' table~~
  - ~~add human-readable dates next to the eth block numbers in stats~~
@@ -32,10 +36,10 @@ Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d0
 
 #### BUGS
 
- - On first page load, the last hashrate point may not display. Refreshing the 
-   page causes the value to display. Need more testing to find source.
+ - ~~On first page load, the last hashrate point may not display. Refreshing the 
+   page causes the value to display. Need more testing to find source.~~
  - ~~When loading graphs, occasionally the last epoch value loaded is 0, which
-   causes hashrate to be a very large negative number. ~~
+   causes hashrate to be a very large negative number.~~
 
 #### Misc notes
 
@@ -103,8 +107,8 @@ how to figure out what values are located where:
             }
     }
 
-ionicons
-
+Ionicons
+```
 blocks: ion-ios-albums-outline, ion-ios-browsers-outline,  ion-android-apps, ion-cube
 transfers: ion-ios-shuffle, ion-ios-swap-outline
 calculator: ion-ios-calculator-outline
@@ -125,6 +129,6 @@ info: ion-ios-information-circle-outline
 wallet: ion-ios-key-outline, ion-ios-lock-outline
 aparrel: ion-ios-shirt-outline
 contract: ion-ios-paper-outline
-
 reddit: ion-logo-reddit
+```
 

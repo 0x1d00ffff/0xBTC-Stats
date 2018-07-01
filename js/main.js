@@ -6,25 +6,29 @@ function addToURL(value){
   }
 }
 
-const version = "v0.0.11";
+const version = "v0.0.13";
 
 log('0xBitcoin Stats', version);
 el('#footerversion').innerHTML = version;
 
 
-
-/* todo: move these into some kind of contract helper class */
-const _IDEAL_BLOCK_TIME_SECONDS = 600;
-const _BLOCKS_PER_READJUSTMENT = 1024;
-const _CONTRACT_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
-const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";  // 2**234
-const _MAXIMUM_TARGET_BN = new Eth.BN(_MAXIMUM_TARGET_STR, 10);
-const _MINIMUM_TARGET = 2**16;
-const _MINIMUM_TARGET_BN = new Eth.BN(_MINIMUM_TARGET);
+/* intrinsic values */
+const _SECONDS_PER_ETH_BLOCK = 15;
 const _ZERO_BN = new Eth.BN(0, 10);
 
-
-
+/* contract constants */
+/* todo: pull these from the contract */
+/* todo: move these into some kind of contract helper class */
+const _BLOCKS_PER_READJUSTMENT = 1024;
+const _CONTRACT_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
+const _MINT_TOPIC = "0xcf6fbb9dcea7d07263ab4f5c3a92f53af33dffc421d9d121e1c74b307e68189d";
+const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";  // 2**234
+const _MINIMUM_TARGET = 2**16;
+const _ETH_BLOCKS_PER_REWARD = 60;
+/* calculated contract values */
+const _MAXIMUM_TARGET_BN = new Eth.BN(_MAXIMUM_TARGET_STR, 10);
+const _MINIMUM_TARGET_BN = new Eth.BN(_MINIMUM_TARGET);
+const _IDEAL_BLOCK_TIME_SECONDS = _ETH_BLOCKS_PER_REWARD * _SECONDS_PER_ETH_BLOCK;
 
 
 
@@ -39,14 +43,43 @@ var pool_colors = {
   darkred     : "hsl(356, 48%, 30%)",
   teal        : "#009688",
   red         : "#f44336",
+  slate       : "#34495e",
+  brightred   : "#C62828",
+  royal       : "#0070bc",
+  pink        : "#EC407A",
+  grey        : "#78909c",
 
   /* colors below here are not assigned yet */
-  pink        : "#e91e63",
   lightpurple : "#9c27b0",
   lime        : "#cddc39",
   brown       : "#8d6e63",
-  grey        : "#78909c",
 }
+
+
+var known_miners = {
+  "0xf3243babf74ead828ac656877137df705868fd66" : [ "Token Mining Pool", "http://TokenMiningPool.com",     pool_colors.orange ],
+  "0x53ce57325c126145de454719b4931600a0bd6fc4" : [ "0xPool",            "http://0xPool.io",               pool_colors.purple ],
+  "0x98b155d9a42791ce475acc336ae348a72b2e8714" : [ "0xBTCpool",         "http://0xBTCpool.com",           pool_colors.blue ],
+  "0x363b5534fb8b5f615583c7329c9ca8ce6edaf6e6" : [ "mike.rs pool",      "http://mike.rs",            pool_colors.green ],
+  "0x02c8832baf93380562b0c8ce18e2f709d6514c60" : [ "mike.rs pool B",    "http://b.mike.rs",          pool_colors.green ],
+  "0x8dcee1c6302232c4cc5ce7b5ee8be16c1f9fd961" : [ "Mine0xBTC",         "http://mine0xbtc.eu",            pool_colors.darkpurple ],
+  "0x20744acca6966c0f45a80aa7baf778f4517351a4" : [ "PoolOfD32th",       "http://0xbtc.poolofd32th.club",  pool_colors.darkred ],
+  "0xd4ddfd51956c19f624e948abc8619e56e5dc3958" : [ "0xMiningPool",      "http://0xminingpool.com/",       pool_colors.teal ],
+  "0x88c2952c9e9c56e8402d1b6ce6ab986747336b30" : [ "0xbtc.wolfpool.io", "http://wolfpool.io/",            pool_colors.red ],
+  "0x540d752a388b4fc1c9deeb1cd3716a2b7875d8a6" : [ "tosti.ro",          "http://tosti.ro/",               pool_colors.slate ],
+  "0xbbdf0402e51d12950bd8bbd50a25ed1aba5615ef" : [ "ExtremeHash",       "http://0xbtc.extremehash.io/",   pool_colors.brightred ],
+  "0x7d28994733e6dbb93fc285c01d1639e3203b54e4" : [ "Wutime.com",        "http://wutime.com/",             pool_colors.royal ],
+  "0x02e03db268488716c161721663501014fa031250" : [ "xb.veo.network",    "https://xb.veo.network:2096/",   pool_colors.pink ],
+  "0xbf39de3c506f1e809b4e10e00dd22eb331abf334" : [ "xb.veo.network",    "https://xb.veo.network:2096/",   pool_colors.pink ],
+  "0x5404bd6b428bb8e326880849a61f0e7443ef5381" : [ "666pool",           "http://0xbtc.666pool.cn/",       pool_colors.grey ],
+  "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
+  "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
+  "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
+  "0x69ebd94944f0dba3e9416c609fbbe437b45d91ab" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
+  "0x69b85604799d16d938835852e497866a7b280323" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
+  "0x69ded73bd88a72bd9d9ddfce228eadd05601edd7" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
+}
+
 
 
 
@@ -85,8 +118,21 @@ function goToURLAnchor() {
   }
 }
 
+function downloadTextAsFile(filename, text) {
+  var element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
 
-function calculateNewMiningDifficulty(current_difficulty, 
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
+
+
+function calculateNewMiningDifficulty(current_difficulty,
                                       eth_blocks_since_last_difficulty_period,
                                       epochs_mined) {
   var current_mining_target = _MAXIMUM_TARGET_BN.div(new Eth.BN(current_difficulty));
@@ -104,7 +150,7 @@ function calculateNewMiningDifficulty(current_difficulty,
     var excess_block_pct = (target_eth_blocks_since_last_difficulty_period.mul(new Eth.BN(100))).div( eth_blocks_since_last_difficulty_period );
     var excess_block_pct_extra = excess_block_pct.sub(new Eth.BN(100));
     if (excess_block_pct_extra.gt(new Eth.BN(1000))) {
-      excess_block_pct_extra = new Eth.BN(1000); 
+      excess_block_pct_extra = new Eth.BN(1000);
     }
     // If there were 5% more blocks mined than expected then this is 5.  If there were 100% more blocks mined than expected then this is 100.
     //make it harder
@@ -170,14 +216,14 @@ function ethBlockNumberToDateStr(eth_block) {
   //log('latest e', latest_eth_block)
   /* TODO: use web3 instead, its probably more accurate */
   /* blockDate = new Date(web3.eth.get bBlock(startBlock-i+1).timestamp*1000); */
-  return new Date(Date.now() - ((latest_eth_block - eth_block)*15*1000)).toLocaleDateString()
+  return new Date(Date.now() - ((latest_eth_block - eth_block)*_SECONDS_PER_ETH_BLOCK*1000)).toLocaleDateString()
 }
 function ethBlockNumberToTimestamp(eth_block) {
   //log('converting', eth_block)
   //log('latest e', latest_eth_block)
   /* TODO: use web3 instead, its probably more accurate */
   /* blockDate = new Date(web3.eth.getBlock(startBlock-i+1).timestamp*1000); */
-  return new Date(Date.now() - ((latest_eth_block - eth_block)*15*1000)).toLocaleString()
+  return new Date(Date.now() - ((latest_eth_block - eth_block)*_SECONDS_PER_ETH_BLOCK*1000)).toLocaleString()
 }
 
 
@@ -237,7 +283,11 @@ function toReadableThousandsLong(num_value, should_add_b_tags) {
       num_value /= 1000;
     }
   }
-  var num_value_string = num_value.toFixed(0);
+  if(num_value < 10) {
+    var num_value_string = num_value.toFixed(1); 
+  } else {
+    var num_value_string = num_value.toFixed(0); 
+  }
   if(should_add_b_tags) {
     num_value_string = '<b>' + num_value_string + '</b>';
   }
@@ -311,7 +361,7 @@ function updateStatsThatHaveDependencies(stats) {
   el_safe('#SupplyRemaininginEra').innerHTML = "<b>" + supply_remaining_in_era.toLocaleString() + "</b> 0xBTC <span style='font-size:0.8em;'>(" + rewards_blocks_remaining_in_era + " blocks)</span>";
 
   /* time until next epoch ('halvening') */
-  el_safe('#CurrentRewardEra').innerHTML += " <span style='font-size:0.8em;'>(next era: ~" + secondsToReadableTime(rewards_blocks_remaining_in_era * 600) + ")</div>";
+  el_safe('#CurrentRewardEra').innerHTML += " <span style='font-size:0.8em;'>(next era: ~" + secondsToReadableTime(rewards_blocks_remaining_in_era * _IDEAL_BLOCK_TIME_SECONDS) + ")</div>";
 
   /* rewards until next readjustment */
   epoch_count = getValueFromStats('Epoch Count', stats)
@@ -328,7 +378,7 @@ function updateStatsThatHaveDependencies(stats) {
 
   /* time calculated using 15-second eth blocks */
   var eth_blocks_since_last_difficulty_period = current_eth_block - difficulty_start_eth_block;
-  var seconds_since_readjustment = eth_blocks_since_last_difficulty_period * 15
+  var seconds_since_readjustment = eth_blocks_since_last_difficulty_period * _SECONDS_PER_ETH_BLOCK
 
   seconds_per_reward = seconds_since_readjustment / rewards_since_readjustment;
   el_safe('#CurrentAverageRewardTime').innerHTML = "<b>" + (seconds_per_reward / 60).toFixed(2) + "</b> minutes";
@@ -345,6 +395,7 @@ function updateStatsThatHaveDependencies(stats) {
   }
 
   /* estimated hashrate */
+  /* TODO: calculate this equation from max_target (https://en.bitcoin.it/wiki/Difficulty) */
   hashrate = difficulty * 2**22 / _IDEAL_BLOCK_TIME_SECONDS;
   /* use current reward rate in hashrate calculation */
   hashrate *= (_IDEAL_BLOCK_TIME_SECONDS / seconds_per_reward);
@@ -360,13 +411,13 @@ function updateLastUpdatedTime() {
 
 function updateThirdPartyAPIs() {
   /* ethplorer token info */
-  $.getJSON('https://api.ethplorer.io/getTokenInfo/0xb6ed7644c69416d67b522e20bc294a9a9b405b31?apiKey=freekey',
+  $.getJSON('https://api.ethplorer.io/getTokenInfo/' + _CONTRACT_ADDRESS + '?apiKey=freekey',
     function(data) {
       el('#TokenHolders').innerHTML = "<b>" + data["holdersCount"] + "</b> holders";
       el('#TokenTransfers').innerHTML = "<b>" + data["transfersCount"] + "</b> transfers";
   });
   /* ethplorer contract address info */
-  $.getJSON('https://api.ethplorer.io/getAddressInfo/0xb6ed7644c69416d67b522e20bc294a9a9b405b31?apiKey=freekey',
+  $.getJSON('https://api.ethplorer.io/getAddressInfo/' + _CONTRACT_ADDRESS + '?apiKey=freekey',
     function(data) {
       el('#TotalContractOperations').innerHTML = "<b>" + data["countTxs"] + "</b> txs";
   });
@@ -444,24 +495,7 @@ function getMinerNameLinkHTML(address, known_miners) {
 
 /* TODO use hours_into_past */
 function updateAllMinerInfo(eth, stats, hours_into_past){
-
-  var known_miners = {
-    "0xf3243babf74ead828ac656877137df705868fd66" : [ "Token Mining Pool", "http://TokenMiningPool.com",     pool_colors.orange ],
-    "0x53ce57325c126145de454719b4931600a0bd6fc4" : [ "0xPool",            "http://0xPool.io",               pool_colors.purple ],
-    "0x98b155d9a42791ce475acc336ae348a72b2e8714" : [ "0xBTCpool",         "http://0xBTCpool.com",           pool_colors.blue ],
-    "0x363b5534fb8b5f615583c7329c9ca8ce6edaf6e6" : [ "mike.rs pool",      "http://mike.rs:3000",            pool_colors.green ],
-    "0x02c8832baf93380562b0c8ce18e2f709d6514c60" : [ "mike.rs pool B",    "http://b.mike.rs:3000",          pool_colors.green ],
-    "0x8dcee1c6302232c4cc5ce7b5ee8be16c1f9fd961" : [ "Mine0xBTC",         "http://mine0xbtc.eu",            pool_colors.darkpurple ],
-    "0x20744acca6966c0f45a80aa7baf778f4517351a4" : [ "PoolOfD32th",       "http://0xbtc.poolofd32th.club",  pool_colors.darkred ],
-    "0xd4ddfd51956c19f624e948abc8619e56e5dc3958" : [ "0xMiningPool",      "http://0xminingpool.com/",       pool_colors.teal ],
-    "0x88c2952c9e9c56e8402d1b6ce6ab986747336b30" : [ "0xbtc.wolfpool.io", "http://wolfpool.io/",            pool_colors.red ],
-    "0x6917035f1deecc51fa475be4a2dc5528b92fd6b0" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
-    "0x693d59285fefbd6e7be1b87be959eade2a4bf099" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
-    "0x697f698dd492d71734bcaec77fd5065fa7a95a63" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
-    "0x69ebd94944f0dba3e9416c609fbbe437b45d91ab" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
-    "0x69b85604799d16d938835852e497866a7b280323" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
-    "0x69ded73bd88a72bd9d9ddfce228eadd05601edd7" : [ "PiZzA pool",        "http://gpu.PiZzA",               pool_colors.yellow ],
-  }
+  log('updateAllMinerInfo');
 
   var last_reward_eth_block = getValueFromStats('Last Eth Reward Block', stats)
   var current_eth_block = getValueFromStats('Last Eth Block', stats)
@@ -478,8 +512,8 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
   eth.getLogs({
     fromBlock: last_reward_eth_block - num_eth_blocks_to_search,
     toBlock: last_reward_eth_block,
-    address: '0xB6eD7644C69416d67B522e20bC294A9a9B405B31',
-    topics: ['0xcf6fbb9dcea7d07263ab4f5c3a92f53af33dffc421d9d121e1c74b307e68189d', null],
+    address: _CONTRACT_ADDRESS,
+    topics: [_MINT_TOPIC, null],
   })
   .then((result) => {
     /* array of all miner addresses */
@@ -596,12 +630,12 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
 
     var blocks_since_last_reward = current_eth_block - last_reward_eth_block;
     var date_now = new Date();
-    var date_of_last_mint = new Date(date_now.getTime() - blocks_since_last_reward*15*1000)
+    var date_of_last_mint = new Date(date_now.getTime() - blocks_since_last_reward*_SECONDS_PER_ETH_BLOCK*1000)
 
     function get_date_from_eth_block(eth_block) {
       /* TODO: use web3 instead, its probably more accurate */
       /* blockDate = new Date(web3.eth.getBlock(startBlock-i+1).timestamp*1000); */
-      return new Date(date_of_last_mint.getTime() - ((last_reward_eth_block - eth_block)*15*1000)).toLocaleString()
+      return new Date(date_of_last_mint.getTime() - ((last_reward_eth_block - eth_block)*_SECONDS_PER_ETH_BLOCK*1000)).toLocaleString()
     }
 
     /* fill in block info */
@@ -638,6 +672,98 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
   });
 
 
+}
+
+/* get last hours_into_past worth of mined 0xbtc blocks, save to a CSV file */
+function getMinerInfoCSV(eth, stats, hours_into_past){
+  log('getMinerInfoCSV...')
+  var last_reward_eth_block = getValueFromStats('Last Eth Reward Block', stats)
+  var current_eth_block = getValueFromStats('Last Eth Block', stats)
+  var last_difficulty_start_block = getValueFromStats('Last Difficulty Start Block', stats)
+
+  if (hours_into_past == undefined) {
+    hours_into_past = 48;
+  }
+
+  var num_eth_blocks_to_search = hours_into_past * 60 * 60 / 15;
+  //var num_eth_blocks_to_search = last_reward_eth_block - last_difficulty_start_block;
+  log("searching last", num_eth_blocks_to_search, "blocks");
+
+  /* get all mint() transactions in the last N blocks */
+  /* more info: https://github.com/ethjs/ethjs/blob/master/docs/user-guide.md#ethgetlogs */
+  /* and https://ethereum.stackexchange.com/questions/12950/what-are-event-topics/12951#12951 */
+  eth.getLogs({
+    fromBlock: last_reward_eth_block - num_eth_blocks_to_search,
+    toBlock: last_reward_eth_block,
+    address: _CONTRACT_ADDRESS,
+    topics: [_MINT_TOPIC, null],
+  })
+  .then((result) => {
+    /* array of arrays of type [eth_block, txhash, miner_addr] */
+    var mined_blocks = [];
+
+    log("got filter results:", result.length, "transactions");
+
+    result.forEach(function(transaction){
+      function getMinerAddressFromTopic(address_from_topic) {
+        return '0x' + address_from_topic.substr(26, 41);
+      }
+      var tx_hash = transaction['transactionHash'];
+      var block_number = parseInt(transaction['blockNumber'].toString());
+      var miner_address = getMinerAddressFromTopic(transaction['topics'][1].toString());
+
+      mined_blocks.push([block_number, tx_hash, miner_address])
+    });
+
+
+    /* we will eventually show newest blocks first, so reverse the list */
+    mined_blocks.reverse();
+
+    var blocks_since_last_reward = current_eth_block - last_reward_eth_block;
+    var date_now = new Date();
+    var date_of_last_mint = new Date(date_now.getTime() - blocks_since_last_reward*_SECONDS_PER_ETH_BLOCK*1000)
+
+    function get_date_from_eth_block(eth_block) {
+      /* TODO: use web3 instead, its probably more accurate */
+      /* blockDate = new Date(web3.eth.getBlock(startBlock-i+1).timestamp*1000); */
+      return new Date(date_of_last_mint.getTime() - ((last_reward_eth_block - eth_block)*_SECONDS_PER_ETH_BLOCK*1000)).toLocaleString()
+    }
+
+    /* fill in block info */
+    var dt = new Date();
+    var csv_text = 'Time (Approx), Eth Block #, '
+      + 'Transaction Hash, Miner Name, Erh Address\n';
+    mined_blocks.forEach(function(block_info) {
+      var eth_block = parseInt(block_info[0]);
+      var tx_hash = block_info[1];
+      var addr = block_info[2];
+
+      if(known_miners[addr] !== undefined) {
+        var miner_name = known_miners[addr][0];
+      } else {
+        var miner_name = '';
+      }
+
+      csv_text  += ''
+        + '"' + get_date_from_eth_block(eth_block) + '"' + ', '
+        + eth_block + ', '
+        + tx_hash + ', '
+        + miner_name + ', '
+        + addr + '\n';
+
+    });
+    //el('#blockstats').innerHTML = csv_text;
+    log('done');
+
+    // Start file download.
+    downloadTextAsFile("0xbtc-blocks-" + date_now.toLocaleTimeString() + ".csv",
+                       csv_text);
+
+    goToURLAnchor();
+  })
+  .catch((error) => {
+    log('error filtering txs:', error);
+  });
 }
 
 function createStatsTable(){
