@@ -47,17 +47,21 @@ class contractValueOverTime {
     }
   }
 
-  _getSaveStateFunction(block_states, eth_block_num) {
+  _getSaveStateFunction(block_states, eth_block_num, retry_delay) {
     let cv_obj = this;
+
+    if(retry_delay == null) {
+      retry_delay = cv_obj.WAIT_DELAY_ON_TIMEOUT_MS;
+    }
 
     return async function (value) {
       /* for some reason, this is how infura 'fails' to fetch a value */
       /* TODO: only re-try a certain number of times */
       if (value == '0x' || value == null) {
-        log('cv_obj', cv_obj.storage_index.padStart(2), 'block', eth_block_num, ': got a bad value (', value, '), retrying...');
-        await sleep(cv_obj.WAIT_DELAY_ON_TIMEOUT_MS);
-        /* second parameter indicidates 'is_retry' */
-        cv_obj.addValueAtEthBlock(eth_block_num, true);
+        log('cv_obj', cv_obj.storage_index.padStart(2), 'block', eth_block_num, ': got a bad value (', value, '), retrying in ', retry_delay, 'ms...');
+        await sleep(retry_delay);
+        /* 2nd param indicidates is_retry, 3rd is wait time (for exponential backoff) */
+        cv_obj.addValueAtEthBlock(eth_block_num, true, retry_delay*2);
         return;
       } else {
         /* TODO: probably a way to convert w/o going through hex_str */
@@ -74,7 +78,7 @@ class contractValueOverTime {
       }
     }
   }
-  addValueAtEthBlock(eth_block_num, is_retry) {
+  addValueAtEthBlock(eth_block_num, is_retry, retry_delay) {
     /* read value from contract @ specific block num, save to this.states
 
        detail: load eth provider with a request to load value from 
@@ -83,6 +87,9 @@ class contractValueOverTime {
     let cv_obj = this;
     if(is_retry == null) {
       this.expected_state_length += 1;
+    }
+    if(retry_delay == null) {
+      retry_delay = this.WAIT_DELAY_ON_TIMEOUT_MS;
     }
 
     /* make sure we only request integer blocks */
@@ -94,7 +101,7 @@ class contractValueOverTime {
                           new Eth.BN(this.storage_index, 10),
                           eth_block_num.toString(10))
     .then(
-      this._getSaveStateFunction(this.states, eth_block_num)
+      this._getSaveStateFunction(this.states, eth_block_num, retry_delay)
     ).catch(async (error) => {
       if(error.message && error.message.substr(error.message.length-4) == 'null') {
         //log('got null from infura, retrying...');
@@ -102,9 +109,9 @@ class contractValueOverTime {
         //console.log(error);
         log('error reading block storage:', error);
       }
-      await sleep(cv_obj.WAIT_DELAY_ON_TIMEOUT_MS);
-      /* second parameter indicidates 'is_retry' */
-      cv_obj.addValueAtEthBlock(eth_block_num, true);
+      await sleep(retry_delay);
+      /* 2nd param indicidates is_retry, 3rd is wait time (for exponential backoff) */
+      cv_obj.addValueAtEthBlock(eth_block_num, true, retry_delay*2);
       return;
     });
 
