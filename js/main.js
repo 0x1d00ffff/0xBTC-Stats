@@ -6,7 +6,7 @@ function addToURL(value){
   }
 }
 
-const version = "v0.0.13";
+const version = "v0.1.0";
 
 log('0xBitcoin Stats', version);
 el('#footerversion').innerHTML = version;
@@ -504,6 +504,10 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
 
   //var num_eth_blocks_to_search = hours_into_past * 60 * 60 / 15;
   var num_eth_blocks_to_search = last_reward_eth_block - last_difficulty_start_block;
+
+  // DEBUG ONLY: show only 10% of the blocks for quick page load
+  //num_eth_blocks_to_search = Math.floor((num_eth_blocks_to_search+1) / 5);
+
   log("searching last", num_eth_blocks_to_search, "blocks");
 
   /* get all mint() transactions in the last N blocks */
