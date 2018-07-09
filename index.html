@@ -399,6 +399,7 @@ Attributions:
       } catch (err) {
         log('failed to set DOMready fn. Jquery load error?');
         el('#statistics').innerHTML = "Sorry, failed to load jquery. Try again later.";
+        el('#difficultystats').innerHTML = "Sorry, failed to load jquery. Try again later.";
         fail;
       } finally {
         initPage();
