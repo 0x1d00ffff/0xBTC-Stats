@@ -116,7 +116,7 @@ class contractValueOverTime {
     });
 
     if(is_retry) {
-      log('cv_obj', this.storage_index.padStart(2), 'block', eth_block_num, ': queued (retry)');
+      log('cv_obj', this.storage_index.padStart(2), 'block', eth_block_num, ': queued (retry, timeout:', retry_delay, ')');
     } else {
       log('cv_obj', this.storage_index.padStart(2), 'block', eth_block_num, ': queued');
     }
