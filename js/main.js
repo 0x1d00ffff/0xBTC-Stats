@@ -509,15 +509,22 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
   var miner_block_count = {};
   /* total number of blocks mined since last difficulty adjustment */
   var total_block_count = 0;
-  var lastImportedMintBlock = -1;
+  var lastImportedMintBlock = 0;
 
-  // check to see if the browser has any data in localStorage
+  var last_reward_eth_block = getValueFromStats('Last Eth Reward Block', stats)
+  var current_eth_block = getValueFromStats('Last Eth Block', stats)
+  var estimated_network_hashrate = getValueFromStats('Estimated Hashrate', stats)
+  var last_difficulty_start_block = getValueFromStats('Last Difficulty Start Block', stats)
+
+  // check to see if the browser has any data in localStorage we can use.
+  // don't use the data, though, if it's from an old difficulty period
   try {
-    var strMints = localStorage.getItem('mints');
-    var strLastMintBlock = localStorage.getItem('lastMintBlock');
+    var lastDifficultyStartBlockStorage = Number(localStorage.getItem('lastDifficultyStartBlock'));
+    lastImportedMintBlock = Number(localStorage.getItem('lastMintBlock'));
+    var mintData = localStorage.getItem('mintData');
 
-    if (strMints !== null && strLastMintBlock !== null) {
-      mined_blocks = JSON.parse(strMints);
+    if (mintData !== null && lastDifficultyStartBlockStorage == last_difficulty_start_block) {
+      mined_blocks = JSON.parse(mintData);
       total_block_count = mined_blocks.length;
       log('imported', total_block_count, 'transactions from localStorage');
       mined_blocks.forEach(function(mintData) {
@@ -527,19 +534,12 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
           miner_block_count[mintData[2]]++;
         }
       });
-
-      lastImportedMintBlock = parseInt(strLastMintBlock);
     }
   } catch (err) {
     log('error reading from localStorage:', err.message);
-    lastImportedMintBlock = -1;
+    lastImportedMintBlock = 0;
     mined_blocks.length = 0;
   }
-
-  var last_reward_eth_block = getValueFromStats('Last Eth Reward Block', stats)
-  var current_eth_block = getValueFromStats('Last Eth Block', stats)
-  var estimated_network_hashrate = getValueFromStats('Estimated Hashrate', stats)
-  var last_difficulty_start_block = getValueFromStats('Last Difficulty Start Block', stats)
 
   var startLogSearchAt = Math.max(last_difficulty_start_block, lastImportedMintBlock + 1);
 
@@ -578,8 +578,9 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
     });
 
     if (result.length > 0) {
-      localStorage.setItem('mints', JSON.stringify(mined_blocks));
+      localStorage.setItem('mintData', JSON.stringify(mined_blocks));
       localStorage.setItem('lastMintBlock', mined_blocks[0][0]);
+      localStorage.setItem('lastDifficultyStartBlock', last_difficulty_start_block.toString());
     }
 
     log("processed blocks:",
