@@ -33,6 +33,7 @@ Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d0
    - contract transactions / day
    - stacked line graph showing different miners hashrates over time
    - gas spent on mint()s over time
+   - "estimated time until retarget" over time
 
 #### BUGS
 
