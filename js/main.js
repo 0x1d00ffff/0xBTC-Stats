@@ -509,7 +509,7 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
   var miner_block_count = {};
   /* total number of blocks mined since last difficulty adjustment */
   var total_block_count = 0;
-  var lastImportedMintBlock = 0;
+  var last_imported_mint_block = 0;
 
   var last_reward_eth_block = getValueFromStats('Last Eth Reward Block', stats)
   var current_eth_block = getValueFromStats('Last Eth Block', stats)
@@ -519,12 +519,12 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
   // check to see if the browser has any data in localStorage we can use.
   // don't use the data, though, if it's from an old difficulty period
   try {
-    var lastDifficultyStartBlockStorage = Number(localStorage.getItem('lastDifficultyStartBlock'));
-    lastImportedMintBlock = Number(localStorage.getItem('lastMintBlock'));
-    var mintData = localStorage.getItem('mintData');
+    var last_diff_block_storage = Number(localStorage.getItem('lastDifficultyStartBlock'));
+    last_imported_mint_block = Number(localStorage.getItem('lastMintBlock'));
+    var mint_data = localStorage.getItem('mintData');
 
-    if (mintData !== null && lastDifficultyStartBlockStorage == last_difficulty_start_block) {
-      mined_blocks = JSON.parse(mintData);
+    if (mint_data !== null && last_diff_block_storage == last_difficulty_start_block) {
+      mined_blocks = JSON.parse(mint_data);
       total_block_count = mined_blocks.length;
       log('imported', total_block_count, 'transactions from localStorage');
       mined_blocks.forEach(function(mintData) {
@@ -537,19 +537,19 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
     }
   } catch (err) {
     log('error reading from localStorage:', err.message);
-    lastImportedMintBlock = 0;
+    last_imported_mint_block = 0;
     mined_blocks.length = 0;
   }
 
-  var startLogSearchAt = Math.max(last_difficulty_start_block, lastImportedMintBlock + 1);
+  var start_log_search_at = Math.max(last_difficulty_start_block, last_imported_mint_block + 1);
 
-  log("searching last", last_reward_eth_block - startLogSearchAt, "blocks");
+  log("searching last", last_reward_eth_block - start_log_search_at, "blocks");
 
   /* get all mint() transactions in the last N blocks */
   /* more info: https://github.com/ethjs/ethjs/blob/master/docs/user-guide.md#ethgetlogs */
   /* and https://ethereum.stackexchange.com/questions/12950/what-are-event-topics/12951#12951 */
   eth.getLogs({
-    fromBlock: startLogSearchAt,
+    fromBlock: start_log_search_at,
     toBlock: last_reward_eth_block,
     address: _CONTRACT_ADDRESS,
     topics: [_MINT_TOPIC, null],
