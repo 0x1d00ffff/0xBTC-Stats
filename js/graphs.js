@@ -47,10 +47,7 @@ class contractValueOverTime {
     var last_storage_block = null;
     if (storage_data !== null) {
       log('read in', storage_data.length, 'cached elements for', this.descriptor);
-      // calculate 'normalized' block number for the last data point, since the 
-      // blocks aren't precisely at midnight and we won't be able to match fresh data
-      // with archived data if we compare at full precision.
-      last_storage_block = Math.floor(storage_data[storage_data.length - 1][0] / 1000);
+      last_storage_block = storage_data[storage_data.length - 1][0];
     }
 
     // get a data point for the current time (ie. end_block_num), then get remaining data points
@@ -67,7 +64,7 @@ class contractValueOverTime {
     var use_storage = false;
     for (var count = 0; count < query_count - 1; count += 1) {
       var block_num = end_block_num - (stepsize*count);
-      if (Math.floor(block_num / 1000) === last_storage_block) {
+      if (Math.abs(block_num - last_storage_block) < 500) {
         use_storage = true;
       }
       if (use_storage) {
