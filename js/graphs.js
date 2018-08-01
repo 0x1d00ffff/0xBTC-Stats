@@ -12,7 +12,7 @@
   obj.getValues returns all requested data
  */
 class contractValueOverTime {
-  constructor(eth, contract_address, storage_index) {
+  constructor(eth, contract_address, storage_index, descriptor) {
     /* how long to wait between sequential requests */
     this.WAIT_DELAY_FIXED_MS = 60;
     /* how long to wait before retrying after a timeout */
@@ -21,6 +21,7 @@ class contractValueOverTime {
     this.eth = eth;
     this.contract_address = contract_address;
     this.storage_index = storage_index;
+    this.descriptor = descriptor;
     this.sorted = false;
     this.states = [];
     /* since values are added asynchronously, we store the length we
@@ -37,13 +38,43 @@ class contractValueOverTime {
   }
   /* fetch query_count states between start_block_num and end_block_num */
   async addValuesInRange(start_block_num, end_block_num, query_count) {
-    var stepsize = (end_block_num-start_block_num) / query_count;
+    var stepsize = Math.floor((end_block_num-start_block_num) / query_count);
     //log('stepsize', stepsize);
 
-    for (var count = 0; count < query_count; count += 1) {
-      let block_num = end_block_num - (stepsize*count);
-      this.addValueAtEthBlock(block_num);
-      await sleep(this.WAIT_DELAY_FIXED_MS);
+    // check localStorage to see if we have any cached data
+    var storage_data = JSON.parse(localStorage.getItem(this.descriptor));
+
+    var last_storage_block = null;
+    if (storage_data !== null) {
+      log('read in', storage_data.length, 'cached elements for', this.descriptor);
+      last_storage_block = storage_data[storage_data.length - 1][0];
+    }
+
+    // get a data point for the current time (ie. end_block_num), then get remaining data points
+    // at 24 hour intervals centered on midnight.
+    this.addValueAtEthBlock(end_block_num);
+
+    // estimate eth blocks since midnight
+    var d = new Date();
+    var secondsSinceMidnight = (d.getTime() - d.setHours(0,0,0,0)) / 1000;
+    var blocksSinceMidnight = Math.floor(secondsSinceMidnight / _SECONDS_PER_ETH_BLOCK);
+    end_block_num -= blocksSinceMidnight;
+
+    // retrieve remaining data points
+    var use_storage = false;
+    for (var count = 0; count < query_count - 1; count += 1) {
+      var block_num = end_block_num - (stepsize*count);
+      if (Math.abs(block_num - last_storage_block) < 500) {
+        use_storage = true;
+      }
+      if (use_storage) {
+        let element = storage_data.pop();
+        this.states.push([element[0], new Eth.BN(element[1], 16), '']);
+        this.expected_state_length++;
+      } else {
+        this.addValueAtEthBlock(block_num);
+        await sleep(this.WAIT_DELAY_FIXED_MS);
+      }
     }
   }
 
@@ -68,7 +99,7 @@ class contractValueOverTime {
         var hex_str = value.substr(2, 64);
         var value_bn = new Eth.BN(hex_str, 16)
 
-        log('cv_obj', cv_obj.storage_index.padStart(2), 'block', eth_block_num, ': saving ', value);
+        // log('cv_obj', cv_obj.storage_index.padStart(2), 'block', eth_block_num, ': saving ', value);
         cv_obj.sorted = false;
         /* [block num, value @ block num, timestamp of block num] */
         var len = block_states.push([eth_block_num, value_bn, '']);
@@ -115,11 +146,11 @@ class contractValueOverTime {
       return;
     });
 
-    if(is_retry) {
-      log('cv_obj', this.storage_index.padStart(2), 'block', eth_block_num, ': queued (retry, timeout:', retry_delay, ')');
-    } else {
-      log('cv_obj', this.storage_index.padStart(2), 'block', eth_block_num, ': queued');
-    }
+    // if(is_retry) {
+    //   log('cv_obj', this.storage_index.padStart(2), 'block', eth_block_num, ': queued (retry, timeout:', retry_delay, ')');
+    // } else {
+    //   log('cv_obj', this.storage_index.padStart(2), 'block', eth_block_num, ': queued');
+    // }
 
   }
   areAllValuesLoaded() {
@@ -229,6 +260,13 @@ class contractValueOverTime {
       log(this.states);
     }
   }
+
+  saveToLocalStorage() {
+    // the last item of the array is data from 'now', which we don't want.
+    // we only keep data points representing the values at midnight.
+    localStorage.setItem(this.descriptor, JSON.stringify(this.states.slice(0, -1)));
+  }
+
 }
 
 
@@ -712,13 +750,13 @@ async function updateHashrateAndBlocktimeGraph(eth, start_eth_block, end_eth_blo
   // NOTE: it is important to make sure the step size is small enough to
   //       capture all difficulty changes. For 0xBTC once/day is more than
   //       enough.
-  var last_diff_start_blocks = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '6');
+  var last_diff_start_blocks = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '6', 'diffStartBlocks');
   // 'reward era' is at location 7
-  var era_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '7');
+  var era_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '7', 'eraValues');
   // 'tokens minted' is at location 20
-  var tokens_minted_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '20');
+  var tokens_minted_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '20', 'tokensMinted');
   // 'mining target' is at location 11
-  var mining_target_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '11');
+  var mining_target_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '11', 'miningTargets');
 
   last_diff_start_blocks.addValuesInRange(start_eth_block, end_eth_block, num_search_points);
   era_values.addValuesInRange(start_eth_block, end_eth_block, num_search_points);
@@ -744,6 +782,10 @@ async function updateHashrateAndBlocktimeGraph(eth, start_eth_block, end_eth_blo
     await sleep(1000);
   }
   //await last_diff_start_blocks.waitUntilLoaded();
+
+  // sort and archive before removing duplicates
+  last_diff_start_blocks.sortValues();
+  last_diff_start_blocks.saveToLocalStorage();
 
   /* this operation removes removes duplicate values keeping only the first */
   last_diff_start_blocks.removeExtraValuesForStepChart();
@@ -790,6 +832,12 @@ async function updateHashrateAndBlocktimeGraph(eth, start_eth_block, end_eth_blo
   era_values.deleteLastPointIfZero();
 
   generateHashrateAndBlocktimeGraph(eth, mining_target_values, era_values, tokens_minted_values);
+
+  era_values.saveToLocalStorage();
+  tokens_minted_values.saveToLocalStorage();
+  // don't bother with mining_target_values.  it's only a few data points which we can quickly 
+  // read from the blockchain.
+
 }
 
 function updateGraphData(history_days, num_search_points) {
@@ -809,6 +857,9 @@ function updateGraphData(history_days, num_search_points) {
     if (max_blocks / num_search_points > eth_blocks_per_day) {
       log("WARNING: search points are greater than 1 day apart. Make sure you know what you are doing...");
     }
+
+    // ignore value passed in, since we assume 24 hour data intervals in other parts of this code
+    num_search_points = history_days;   
 
     let start_eth_block = (latest_eth_block-max_blocks);
     let end_eth_block = latest_eth_block-8;

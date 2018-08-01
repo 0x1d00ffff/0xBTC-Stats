@@ -496,48 +496,71 @@ function getMinerNameLinkHTML(address, known_miners) {
   return '<a href="' + address_url + '">' + poolstyle + readable_name + '</span></a>';
 }
 
+function getMinerAddressFromTopic(topic) {
+  return '0x' + topic.substr(26, 41);
+}
+
 /* TODO use hours_into_past */
 function updateAllMinerInfo(eth, stats, hours_into_past){
   log('updateAllMinerInfo');
+
+  /* array of arrays of type [eth_block, txhash, miner_addr] */
+  var mined_blocks = [];
+  /* dict where key=miner_addr and value=total_mined_block_count */
+  var miner_block_count = {};
+  /* total number of blocks mined since last difficulty adjustment */
+  var total_block_count = 0;
+  var last_imported_mint_block = 0;
 
   var last_reward_eth_block = getValueFromStats('Last Eth Reward Block', stats)
   var current_eth_block = getValueFromStats('Last Eth Block', stats)
   var estimated_network_hashrate = getValueFromStats('Estimated Hashrate', stats)
   var last_difficulty_start_block = getValueFromStats('Last Difficulty Start Block', stats)
 
-  //var num_eth_blocks_to_search = hours_into_past * 60 * 60 / 15;
-  var num_eth_blocks_to_search = last_reward_eth_block - last_difficulty_start_block;
+  // check to see if the browser has any data in localStorage we can use.
+  // don't use the data, though, if it's from an old difficulty period
+  try {
+    var last_diff_block_storage = Number(localStorage.getItem('lastDifficultyStartBlock'));
+    last_imported_mint_block = Number(localStorage.getItem('lastMintBlock'));
+    var mint_data = localStorage.getItem('mintData');
 
-  // DEBUG ONLY: show only 10% of the blocks for quick page load
-  //num_eth_blocks_to_search = Math.floor((num_eth_blocks_to_search+1) / 5);
+    if (mint_data !== null && last_diff_block_storage == last_difficulty_start_block) {
+      mined_blocks = JSON.parse(mint_data);
+      total_block_count = mined_blocks.length;
+      log('imported', total_block_count, 'transactions from localStorage');
+      mined_blocks.forEach(function(mintData) {
+        if (miner_block_count[mintData[2]] === undefined) {
+          miner_block_count[mintData[2]] = 1;
+        } else {
+          miner_block_count[mintData[2]]++;
+        }
+      });
+    }
+  } catch (err) {
+    log('error reading from localStorage:', err.message);
+    last_imported_mint_block = 0;
+    mined_blocks.length = 0;
+  }
 
-  log("searching last", num_eth_blocks_to_search, "blocks");
+  var start_log_search_at = Math.max(last_difficulty_start_block, last_imported_mint_block + 1);
+
+  log("searching last", last_reward_eth_block - start_log_search_at, "blocks");
 
   /* get all mint() transactions in the last N blocks */
   /* more info: https://github.com/ethjs/ethjs/blob/master/docs/user-guide.md#ethgetlogs */
   /* and https://ethereum.stackexchange.com/questions/12950/what-are-event-topics/12951#12951 */
   eth.getLogs({
-    fromBlock: last_reward_eth_block - num_eth_blocks_to_search,
+    fromBlock: start_log_search_at,
     toBlock: last_reward_eth_block,
     address: _CONTRACT_ADDRESS,
     topics: [_MINT_TOPIC, null],
   })
   .then((result) => {
-    /* array of all miner addresses */
-    var miner_list = [];
-    /* array of arrays of type [eth_block, txhash, miner_addr] */
-    var mined_blocks = [];
-    /* dict where key=miner_addr and value=total_mined_block_count */
-    var miner_block_count = {};
-    /* total number of blocks mined in this filter */
-    var total_block_count = result.length;
 
-    log("got filter results:", total_block_count, "transactions");
+    log("got filter results:", result.length, "transactions");
+    total_block_count += result.length;
 
     result.forEach(function(transaction){
-      function getMinerAddressFromTopic(address_from_topic) {
-        return '0x' + address_from_topic.substr(26, 41);
-      }
       var tx_hash = transaction['transactionHash'];
       var block_number = parseInt(transaction['blockNumber'].toString());
       var miner_address = getMinerAddressFromTopic(transaction['topics'][1].toString());
@@ -546,11 +569,7 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
       // log('  block=', block_number);
       // log('  miner=', miner_address)
 
-      if(!miner_list.includes(miner_address)){
-        miner_list.push(miner_address);
-      }
-
-      mined_blocks.push([block_number, tx_hash, miner_address])
+      mined_blocks.unshift([block_number, tx_hash, miner_address])
 
       if(miner_block_count[miner_address] === undefined) {
         miner_block_count[miner_address] = 1;
@@ -559,12 +578,15 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
       }
     });
 
+    if (result.length > 0) {
+      localStorage.setItem('mintData', JSON.stringify(mined_blocks));
+      localStorage.setItem('lastMintBlock', mined_blocks[0][0]);
+      localStorage.setItem('lastDifficultyStartBlock', last_difficulty_start_block.toString());
+    }
+
     log("processed blocks:",
       Object.keys(miner_block_count).length,
       "unique miners");
-
-    /* we will eventually show newest blocks first, so reverse the list */
-    mined_blocks.reverse();
 
     /* collapse miner_block_count using known_miners who have multiple
        address into a single address */
@@ -712,9 +734,6 @@ function getMinerInfoCSV(eth, stats, hours_into_past){
     log("got filter results:", result.length, "transactions");
 
     result.forEach(function(transaction){
-      function getMinerAddressFromTopic(address_from_topic) {
-        return '0x' + address_from_topic.substr(26, 41);
-      }
       var tx_hash = transaction['transactionHash'];
       var block_number = parseInt(transaction['blockNumber'].toString());
       var miner_address = getMinerAddressFromTopic(transaction['topics'][1].toString());
