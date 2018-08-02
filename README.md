@@ -4,6 +4,12 @@ Simple web site to show stats about the 0xBTC ERC-20 token ([link](https://0x1d0
 
 #### TODO
 
+ - add a 'minimum step size' to the graphs page to prevent the case where someone
+   loads the graph at 12:30AM and there is a very short step from about 11:30-
+   12:30. This step causes the graph to average a hashrate over this small time
+   window. When there are no mints in this window the graph draws a zero point
+   for the most recent value. 
+   ([screenshot](https://cdn.discordapp.com/attachments/412477591778492429/474458006084648962/unknown.png) from @wwwmmm)
  - add selectors to change graph window size (30 days, 60 days) and resolution
  - move more of the static html (table header rows etc) from js into .html files
  - add a set of useful links to the footer of the site
