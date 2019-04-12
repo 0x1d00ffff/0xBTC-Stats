@@ -19,18 +19,36 @@ const _ZERO_BN = new Eth.BN(0, 10);
 /* contract constants */
 /* todo: pull these from the contract */
 /* todo: move these into some kind of contract helper class */
+const _CONTRACT_NAME = "0xBitcoin";
+const _CONTRACT_SYMBOL = "0xBTC";
 const _BLOCKS_PER_READJUSTMENT = 1024;
 const _CONTRACT_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
 const _MINT_TOPIC = "0xcf6fbb9dcea7d07263ab4f5c3a92f53af33dffc421d9d121e1c74b307e68189d";
 const _MAXIMUM_TARGET_STR = "27606985387162255149739023449108101809804435888681546220650096895197184";  // 2**234
 const _MINIMUM_TARGET = 2**16;
 const _ETH_BLOCKS_PER_REWARD = 60;
+const _HASHRATE_MULTIPLIER = 2**22; /* TODO: calculate this from max_target (https://en.bitcoin.it/wiki/Difficulty) */
+/* contract variable storage locations */
+const _LAST_DIFF_START_BLOCK_INDEX = '6';
+const _ERA_INDEX = '7';
+const _TOKENS_MINTED_INDEX = '20';
+const _MINING_TARGET_INDEX = '11';
 /* calculated contract values */
 const _MAXIMUM_TARGET_BN = new Eth.BN(_MAXIMUM_TARGET_STR, 10);
 const _MINIMUM_TARGET_BN = new Eth.BN(_MINIMUM_TARGET);
 const _IDEAL_BLOCK_TIME_SECONDS = _ETH_BLOCKS_PER_REWARD * _SECONDS_PER_ETH_BLOCK;
 
-
+/* TODO: figure out why it doesn't work w metamask */
+var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"));
+// if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !== 'undefined') {
+//   var eth = new Eth(window.web3.currentProvider);
+// } else {
+//   var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"));
+//   log("warning: no web3 provider found, using infura.io as backup provider")
+// }
+var _BLOCK_EXPLORER_ADDRESS_URL = 'https://etherscan.io/address/';
+var _BLOCK_EXPLORER_TX_URL = 'https://etherscan.io/tx/';
+var _BLOCK_EXPLORER_BLOCK_URL = 'https://etherscan.io/block/';
 
 /* colors used by pool names. todo: move to css, still use them for chart.js */
 var pool_colors = {
@@ -54,7 +72,6 @@ var pool_colors = {
   lime        : "#cddc39",
   brown       : "#8d6e63",
 }
-
 
 var known_miners = {
   "0xf3243babf74ead828ac656877137df705868fd66" : [ "Token Mining Pool", "http://TokenMiningPool.com",     pool_colors.orange ],
@@ -85,15 +102,6 @@ var known_miners = {
 
 
 
-
-/* TODO: figure out why it doesn't work w metamask */
-var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"));
-// if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !== 'undefined') {
-//   var eth = new Eth(window.web3.currentProvider);
-// } else {
-//   var eth = new Eth(new Eth.HttpProvider("https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"));
-//   log("warning: no web3 provider found, using infura.io as backup provider")
-// }
 
 
 const token = eth.contract(tokenABI).at(_CONTRACT_ADDRESS);
@@ -188,25 +196,25 @@ function calculateNewMiningDifficulty(current_difficulty,
 
 /* move fetching/storing stats into a class, even just to wrap it */
 stats = [
-  /*Description                     promise which retuns, or null         units         multiplier  null: filled in later*/
-  ['Mining Difficulty',             token.getMiningDifficulty,            "",           1,          null     ], /* mining difficulty */
-  ['Estimated Hashrate',            null,                                 "Mh/s",       1,          null     ], /* mining difficulty */
-  ['Rewards Until Readjustment',    null,                                 "",           1,          null     ], /* mining difficulty */
-  ['Current Average Reward Time',   null,                                 "minutes",    1,          null     ], /* mining difficulty */
-  ['Last Difficulty Start Block',   token.latestDifficultyPeriodStarted,  "",           1,          null     ], /* mining difficulty */
-  ['Tokens Minted',                 token.tokensMinted,                   "0xBTC",      0.00000001, null     ], /* supply */
-  ['Max Supply for Current Era',    token.maxSupplyForEra,                "0xBTC",      0.00000001, null     ], /* mining */
-  ['Supply Remaining in Era',       null,                                 "0xBTC",      0.00000001, null     ], /* mining */
-  ['Last Eth Reward Block',         token.lastRewardEthBlockNumber,       "",           1,          null     ], /* mining */
-  ['Last Eth Block',                eth.blockNumber,                      "",           1,          null     ], /* mining */
-  ['Current Reward Era',            token.rewardEra,                      "/ 39",       1,          null     ], /* mining */
-  ['Current Mining Reward',         token.getMiningReward,                "0xBTC",      0.00000001, null     ], /* mining */
-  ['Epoch Count',                   token.epochCount,                     "",           1,          null     ], /* mining */
-  ['Total Supply',                  token.totalSupply,                    "0xBTC",      0.00000001, null     ], /* supply */
-  ['',                              null,                                 "",           1,          null     ], /* */
-  ['Token Holders',                 null,                                 "holders",    1,          null     ], /* usage */
-  ['Token Transfers',               null,                                 "transfers",  1,          null     ], /* usage */
-  ['Total Contract Operations',     null,                                 "txs",        1,          null     ], /* usage */
+  /*Description                     promise which retuns, or null         units               multiplier  null: filled in later*/
+  ['Mining Difficulty',             token.getMiningDifficulty,            "",                 1,          null     ], /* mining difficulty */
+  ['Estimated Hashrate',            null,                                 "Mh/s",             1,          null     ], /* mining difficulty */
+  ['Rewards Until Readjustment',    null,                                 "",                 1,          null     ], /* mining difficulty */
+  ['Current Average Reward Time',   null,                                 "minutes",          1,          null     ], /* mining difficulty */
+  ['Last Difficulty Start Block',   token.latestDifficultyPeriodStarted,  "",                 1,          null     ], /* mining difficulty */
+  ['Tokens Minted',                 token.tokensMinted,                   _CONTRACT_SYMBOL,   0.00000001, null     ], /* supply */
+  ['Max Supply for Current Era',    token.maxSupplyForEra,                _CONTRACT_SYMBOL,   0.00000001, null     ], /* mining */
+  ['Supply Remaining in Era',       null,                                 _CONTRACT_SYMBOL,   0.00000001, null     ], /* mining */
+  ['Last Eth Reward Block',         token.lastRewardEthBlockNumber,       "",                 1,          null     ], /* mining */
+  ['Last Eth Block',                eth.blockNumber,                      "",                 1,          null     ], /* mining */
+  ['Current Reward Era',            token.rewardEra,                      "/ 39",             1,          null     ], /* mining */
+  ['Current Mining Reward',         token.getMiningReward,                _CONTRACT_SYMBOL,   0.00000001, null     ], /* mining */
+  ['Epoch Count',                   token.epochCount,                     "",                 1,          null     ], /* mining */
+  ['Total Supply',                  token.totalSupply,                    _CONTRACT_SYMBOL,   0.00000001, null     ], /* supply */
+  ['',                              null,                                 "",                 1,          null     ], /* */
+  ['Token Holders',                 null,                                 "holders",          1,          null     ], /* usage */
+  ['Token Transfers',               null,                                 "transfers",        1,          null     ], /* usage */
+  ['Total Contract Operations',     null,                                 "txs",              1,          null     ], /* usage */
 ];
 
 var latest_eth_block = null;
@@ -361,7 +369,7 @@ function updateStatsThatHaveDependencies(stats) {
   }
   supply_remaining_in_era = max_supply_for_era - current_supply; /* TODO: probably need to round to current mining reward */
   rewards_blocks_remaining_in_era = supply_remaining_in_era / current_reward;
-  el_safe('#SupplyRemaininginEra').innerHTML = "<b>" + supply_remaining_in_era.toLocaleString() + "</b> 0xBTC <span style='font-size:0.8em;'>(" + rewards_blocks_remaining_in_era + " blocks)</span>";
+  el_safe('#SupplyRemaininginEra').innerHTML = "<b>" + supply_remaining_in_era.toLocaleString() + "</b> " + _CONTRACT_SYMBOL + " <span style='font-size:0.8em;'>(" + rewards_blocks_remaining_in_era + " blocks)</span>";
 
   /* time until next epoch ('halvening') */
   el_safe('#CurrentRewardEra').innerHTML += " <span style='font-size:0.8em;'>(next era: ~" + secondsToReadableTime(rewards_blocks_remaining_in_era * _IDEAL_BLOCK_TIME_SECONDS) + ")</div>";
@@ -398,8 +406,7 @@ function updateStatsThatHaveDependencies(stats) {
   }
 
   /* estimated hashrate */
-  /* TODO: calculate this equation from max_target (https://en.bitcoin.it/wiki/Difficulty) */
-  hashrate = difficulty * 2**22 / _IDEAL_BLOCK_TIME_SECONDS;
+  hashrate = difficulty * _HASHRATE_MULTIPLIER / _IDEAL_BLOCK_TIME_SECONDS;
   /* use current reward rate in hashrate calculation */
   hashrate *= (_IDEAL_BLOCK_TIME_SECONDS / seconds_per_reward);
   setValueInStats('Estimated Hashrate', hashrate, stats);
@@ -490,7 +497,7 @@ function getMinerNameLinkHTML(address, known_miners) {
     var address_url = known_miners[address][1];
   } else {
     var readable_name = address.substr(0, 14) + '...';
-    var address_url = 'https://etherscan.io/address/' + address;
+    var address_url = _BLOCK_EXPLORER_ADDRESS_URL + address;
   }
 
   return '<a href="' + address_url + '">' + poolstyle + readable_name + '</span></a>';
@@ -678,8 +685,8 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
 
       var miner_name_link = getMinerNameLinkHTML(addr, known_miners);
 
-      var transaction_url = 'https://etherscan.io/tx/' + tx_hash;
-      var block_url = 'https://etherscan.io/block/' + eth_block;
+      var transaction_url = _BLOCK_EXPLORER_TX_URL + tx_hash;
+      var block_url = _BLOCK_EXPLORER_BLOCK_URL + eth_block;
 
       //log('hexcolor:', hexcolor, address_url);
 

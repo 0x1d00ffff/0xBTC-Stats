@@ -362,25 +362,17 @@ function generateHashrateAndBlocktimeGraph(eth, target_cv_obj, era_cv_obj, token
            index difficulty_data as step-1 instead of step-2, skipping a
            value. */
         var last_difficulty = difficulty_data[difficulty_data_index-1].y.toNumber();
-
+        difficulty = (current_difficulty * (diff1_duration/step_size_in_eth_blocks))
+                     + (last_difficulty * (diff2_duration/step_size_in_eth_blocks));
         // console.log('step size', step_size_in_eth_blocks);
         // console.log('dif', difficulty);
         // console.log('d curr', eras_per_block_data[step].x, diff1_duration, current_difficulty);
         // console.log('d  old', eras_per_block_data[step-1].x, diff2_duration, last_difficulty);
-
-        difficulty = (current_difficulty * (diff1_duration/step_size_in_eth_blocks))
-                     + (last_difficulty * (diff2_duration/step_size_in_eth_blocks));
-        //console.log('d', difficulty);
-
-
+        // console.log('d', difficulty);
       }
 
-
-
-      var unadjusted_network_hashrate = difficulty * 2**22 / _IDEAL_BLOCK_TIME_SECONDS;
-
+      var unadjusted_network_hashrate = difficulty * _HASHRATE_MULTIPLIER / _IDEAL_BLOCK_TIME_SECONDS;
       var network_hashrate = unadjusted_network_hashrate * (current_eras_per_block/expected_eras_per_block);
-
       //log('for block', current_eth_block, 'diff', difficulty.toFixed(1), 'uhr', unadjusted_network_hashrate, 'hr', network_hashrate)
 
       chart_data.push({
@@ -400,7 +392,6 @@ function generateHashrateAndBlocktimeGraph(eth, target_cv_obj, era_cv_obj, token
   var total_supply_data = convertValuesToChartData(tokens_minted_values, 
                                                    (x)=>{return x / 10**8});
   var eras_per_block_data = getErasPerBlockFromEraData(era_values);
-  //log('era data', eras_per_block_data);
 
   var hashrate_data = getHashrateDataFromDifficultyAndErasPerBlockData(difficulty_data, eras_per_block_data);
 
@@ -414,7 +405,6 @@ function generateHashrateAndBlocktimeGraph(eth, target_cv_obj, era_cv_obj, token
     })
   }
 
-
   /* figure out how to scale chart: difficulty can be too high or too low */
   var max_difficulty_value = 0
   for (var i = 0; i < difficulty_data.length; i += 1) {
@@ -422,31 +412,20 @@ function generateHashrateAndBlocktimeGraph(eth, target_cv_obj, era_cv_obj, token
       max_difficulty_value = difficulty_data[i].y.toNumber();
     }
   }
-
-  /* get max hashrate data, note - not a BN */
   var max_hashrate_value = 0
   for (var i = 0; i < hashrate_data.length; i += 1) {
+    /* get max hashrate data, note - not a BN */
     if (hashrate_data[i].y > max_hashrate_value) {
       max_hashrate_value = hashrate_data[i].y;
     }
   }
-
-  //log('max_hashrate_value', max_hashrate_value);
-  //log('max_difficulty_value', max_difficulty_value);
-
-  var hashrate_based_on_difficulty = max_difficulty_value * 2**22 / _IDEAL_BLOCK_TIME_SECONDS;
-  var difficulty_based_on_hashrate = max_hashrate_value / ((2**22) / _IDEAL_BLOCK_TIME_SECONDS);
-
-  //log('hashrate_based_on_difficulty', hashrate_based_on_difficulty);
-  //log('difficulty_based_on_hashrate', difficulty_based_on_hashrate);
-
-  /* if difficulty is higher than hashrate */
+  var hashrate_based_on_difficulty = max_difficulty_value * _HASHRATE_MULTIPLIER / _IDEAL_BLOCK_TIME_SECONDS;
+  var difficulty_based_on_hashrate = max_hashrate_value / ((_HASHRATE_MULTIPLIER) / _IDEAL_BLOCK_TIME_SECONDS);
   if (hashrate_based_on_difficulty > max_hashrate_value) {
     max_hashrate_value = hashrate_based_on_difficulty;
   } else {
     max_difficulty_value = difficulty_based_on_hashrate;
   }
-
   //log('max_hashrate_value', max_hashrate_value);
   //log('max_difficulty_value', max_difficulty_value);
 
@@ -711,7 +690,7 @@ function generateHashrateAndBlocktimeGraph(eth, target_cv_obj, era_cv_obj, token
             //type: 'logarithmic',  /* hard to read */
             scaleLabel: {
               display: true,
-              labelString: 'Total Supply (0xBitcoin)',
+              labelString: 'Total Supply (' + _CONTRACT_NAME + ')',
               fontColor: 'rgb(255, 152, 0)',
             },
             gridLines: {
@@ -750,13 +729,13 @@ async function updateHashrateAndBlocktimeGraph(eth, start_eth_block, end_eth_blo
   // NOTE: it is important to make sure the step size is small enough to
   //       capture all difficulty changes. For 0xBTC once/day is more than
   //       enough.
-  var last_diff_start_blocks = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '6', 'diffStartBlocks');
+  var last_diff_start_blocks = new contractValueOverTime(eth, _CONTRACT_ADDRESS, _LAST_DIFF_START_BLOCK_INDEX, 'diffStartBlocks');
   // 'reward era' is at location 7
-  var era_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '7', 'eraValues');
+  var era_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, _ERA_INDEX, 'eraValues');
   // 'tokens minted' is at location 20
-  var tokens_minted_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '20', 'tokensMinted');
+  var tokens_minted_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, _TOKENS_MINTED_INDEX, 'tokensMinted');
   // 'mining target' is at location 11
-  var mining_target_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, '11', 'miningTargets');
+  var mining_target_values = new contractValueOverTime(eth, _CONTRACT_ADDRESS, _MINING_TARGET_INDEX, 'miningTargets');
 
   last_diff_start_blocks.addValuesInRange(start_eth_block, end_eth_block, num_search_points);
   era_values.addValuesInRange(start_eth_block, end_eth_block, num_search_points);
