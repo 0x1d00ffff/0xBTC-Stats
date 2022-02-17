@@ -39,7 +39,7 @@ const _MINIMUM_TARGET_BN = new Eth.BN(_MINIMUM_TARGET);
 const _IDEAL_BLOCK_TIME_SECONDS = _ETH_BLOCKS_PER_REWARD * _SECONDS_PER_ETH_BLOCK;
 
 /* TODO: figure out why it doesn't work w metamask */
-var eth = new Eth(new Eth.HttpProvider("https://eth-mainnet.alchemyapi.io/v2/1R3-aP9q9pvu1aIPKhtLSkAZKgee_FUp"));
+var eth = new Eth(new Eth.HttpProvider("https://eth-mainnet.alchemyapi.io/v2/2WwnRwjB8EhiTtHk9RNfyOcr5hWq2rpA"));
 // if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !== 'undefined') {
 //   var eth = new Eth(window.web3.currentProvider);
 // } else {
@@ -404,7 +404,8 @@ function updateStatsThatHaveDependencies(stats) {
   epoch_From = getValueFromStats('Epoch Count', stats) %1024
   total_Minted = getValueFromStats('Tokens Minted', stats)
   year_Time = 60*60*24*365
-  ratio_Of_50Reward = rewards_blocks_remaining_in_era * 2/ year_Time
+  ratio_Of_50Reward = rewards_blocks_remaining_in_era * seconds_per_reward/ year_Time
+console.log("ratio_Of_50Reward", ratio_Of_50Reward)
   inflation =  (ratio_Of_50Reward * current_Reward *year_Time / seconds_per_reward) + (1-ratio_Of_50Reward) *( current_Reward/2 *year_Time / seconds_per_reward )
   inflation_Yearly = inflation/(total_Minted) * 100
   inflation_Yearly = inflation_Yearly.toFixed(2)
