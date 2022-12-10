@@ -13,7 +13,7 @@ el('#footerversion').innerHTML = version;
 
 
 /* intrinsic values */
-const _SECONDS_PER_ETH_BLOCK = 15;
+const _SECONDS_PER_ETH_BLOCK = 12;
 const _ZERO_BN = new Eth.BN(0, 10);
 
 /* contract constants */
