@@ -39,7 +39,7 @@ const _MINIMUM_TARGET_BN = new Eth.BN(_MINIMUM_TARGET);
 const _IDEAL_BLOCK_TIME_SECONDS = _ETH_BLOCKS_PER_REWARD * _SECONDS_PER_ETH_BLOCK;
 
 /* TODO: figure out why it doesn't work w metamask */
-var eth = new Eth(new Eth.HttpProvider("https://eth-mainnet.alchemyapi.io/v2/1R3-aP9q9pvu1aIPKhtLSkAZKgee_FUp"));
+var eth = new Eth(new Eth.HttpProvider("https://eth-mainnet.g.alchemy.com/v2/2WwnRwjB8EhiTtHk9RNfyOcr5hWq2rpA"));
 // if (typeof window.web3 !== 'undefined' && typeof window.web3.currentProvider !== 'undefined') {
 //   var eth = new Eth(window.web3.currentProvider);
 // } else {
@@ -207,6 +207,8 @@ stats = [
   ['Tokens Minted',                 token.tokensMinted,                   _CONTRACT_SYMBOL,   0.00000001, null     ], /* supply */
   ['Max Supply for Current Era',    token.maxSupplyForEra,                _CONTRACT_SYMBOL,   0.00000001, null     ], /* mining */
   ['Supply Remaining in Era',       null,                                 _CONTRACT_SYMBOL,   0.00000001, null     ], /* mining */
+  ['Inflation per Year',            null,                    _CONTRACT_SYMBOL,   0.00000001, null     ], /* supply */
+  ['Inflation Percentage per Year', null,                    _CONTRACT_SYMBOL,   0.00000001, null     ], /* supply */
   ['Last Eth Reward Block',         token.lastRewardEthBlockNumber,       "",                 1,          null     ], /* mining */
   ['Last Eth Block',                eth.blockNumber,                      "",                 1,          null     ], /* mining */
   ['Current Reward Era',            token.rewardEra,                      "/ 39",             1,          null     ], /* mining */
@@ -406,6 +408,28 @@ function updateStatsThatHaveDependencies(stats) {
   if(mining_calculator_app) {
     mining_calculator_app.setNextDifficulty(new_mining_difficulty);
   }
+
+
+//Get time until nextRewardEra Find Ratio if less than 1 year
+//Inflation Stat
+secUntilHalvening = rewards_blocks_remaining_in_era * seconds_per_reward
+ratioUntilHalvening =  secUntilHalvening / 60 * 60 * 24 * 365
+if(ratioUntilHalvening>1){
+ratioUntilHalvening=1
+}
+amt1 = (60*60*24*365 / seconds_per_reward * ratioUntilHalvening * current_reward)
+amt2 =  (60*60*24*365 / seconds_per_reward * (1-ratioUntilHalvening) * current_reward / 2)
+console.log("AMT1: ", amt1);
+console.log("AMT12: ", amt2);
+el_safe('#InflationperYear').innerHTML = "<b>" + (amt1+amt2).toLocaleString(undefined, {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0
+}) + "</b> 0xBitcoin";
+el_safe('#InflationPercentageperYear').innerHTML = "<b>" + ((100 * ( amt1+amt2)) / (current_supply + amt1 + amt2)).toLocaleString(undefined, {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 3
+}) + "</b> %";
+  
 
   /* estimated hashrate */
   hashrate = difficulty * _HASHRATE_MULTIPLIER / _IDEAL_BLOCK_TIME_SECONDS;
@@ -902,5 +926,4 @@ function updateAndDisplayAllStats() {
   createStatsTable();
   loadAllStats();
 }
-
 
