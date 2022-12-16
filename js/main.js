@@ -553,6 +553,7 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
 
   var start_log_search_at = Math.max(last_difficulty_start_block, last_imported_mint_block + 1);
   if(last_reward_eth_block - start_log_search_at < 1){
+    last_reward_eth_block = last_reward_eth_block + 2
     start_log_search_at = last_reward_eth_block - 1
   }
 
