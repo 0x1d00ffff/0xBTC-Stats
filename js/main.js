@@ -13,7 +13,7 @@ el('#footerversion').innerHTML = version;
 
 
 /* intrinsic values */
-const _SECONDS_PER_ETH_BLOCK = 15;
+const _SECONDS_PER_ETH_BLOCK = 12;
 const _ZERO_BN = new Eth.BN(0, 10);
 
 /* contract constants */
@@ -552,6 +552,9 @@ function updateAllMinerInfo(eth, stats, hours_into_past){
   }
 
   var start_log_search_at = Math.max(last_difficulty_start_block, last_imported_mint_block + 1);
+  if(last_reward_eth_block - start_log_search_at < 1){
+    start_log_search_at = last_reward_eth_block - 1
+  }
 
   log("searching last", last_reward_eth_block - start_log_search_at, "blocks");
 
