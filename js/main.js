@@ -417,23 +417,26 @@ function updateStatsThatHaveDependencies(stats) {
   el_safe('#EstimatedHashrate').innerHTML = toReadableHashrate(hashrate, true);
   
   /* inflation calculation */
-  secUntilHalvening = rewards_blocks_remaining_in_era * seconds_per_reward
-ratioUntilHalvening =  secUntilHalvening / 60 * 60 * 24 * 365
-if(ratioUntilHalvening>1){
-ratioUntilHalvening=1
-}
-amt1 = (60*60*24*365 / seconds_per_reward * ratioUntilHalvening * current_reward)
-amt2 =  (60*60*24*365 / seconds_per_reward * (1-ratioUntilHalvening) * current_reward / 2)
-console.log("AMT1: ", amt1);
-console.log("AMT12: ", amt2);
-el_safe('#InflationperYear').innerHTML = "<b>" + (amt1+amt2).toLocaleString(undefined, {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0
-}) + "</b> 0xBitcoin";
-el_safe('#InflationPercentageperYear').innerHTML = "<b>" + ((100 * ( amt1+amt2)) / (current_supply + amt1 + amt2)).toLocaleString(undefined, {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 3
-}) + "</b> %";
+  sec_until_halvening = rewards_blocks_remaining_in_era * seconds_per_reward;
+  /* calculate the # of years remaining until the next halving */
+  ratio_until_halvening =  sec_until_halvening / 60 * 60 * 24 * 365;
+  if(ratio_until_halvening>1){
+    ratio_until_halvening=1;
+  }
+  /* calculate number of tokens issued this year at current issuance rate */
+  amt1 = (60*60*24*365 / seconds_per_reward * ratio_until_halvening * current_reward);
+  /* if halvening this year, calc number of tokens issued this year at post-halvening issuance rate */
+  amt2 =  (60*60*24*365 / seconds_per_reward * (1-ratio_until_halvening) * current_reward / 2);
+  console.log("AMT1: ", amt1);
+  console.log("AMT12: ", amt2);
+  el_safe('#InflationperYear').innerHTML = "<b>" + (amt1+amt2).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }) + "</b> 0xBitcoin";
+  el_safe('#InflationPercentageperYear').innerHTML = "<b>" + ((100 * ( amt1+amt2)) / (current_supply + amt1 + amt2)).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3
+  }) + "</b> %";
 
   
 }
